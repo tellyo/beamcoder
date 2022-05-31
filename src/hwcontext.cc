@@ -22,7 +22,7 @@
 #include "hwcontext.h"
 
 void hwContextFinalizer(napi_env env, void* data, void* hint) {
-  printf("Finalizing a hw context reference\n");
+  // printf("Finalizing a hw context reference\n");
   AVBufferRef* ctxRef = (AVBufferRef*) data;
   av_buffer_unref(&ctxRef);
 }
