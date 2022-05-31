@@ -1086,6 +1086,7 @@ void filtererExecute(napi_env env, void* data) {
       }
 
       ++filterIndex;
+      av_buffer_unref(&data.hardwareDeviceContext);
     }
   }
 
