@@ -1097,6 +1097,7 @@ void filtererExecute(napi_env env, void* data) {
   }
 
 end:
+  printf("filter end\n");
   avfilter_inout_free(inputs);
   avfilter_inout_free(outputs);
   delete[] outputs;
