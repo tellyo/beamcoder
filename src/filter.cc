@@ -1140,6 +1140,7 @@ void filtererComplete(napi_env env, napi_status asyncStatus, void* data) {
   status = napi_resolve_deferred(env, c->_deferred, result);
   FLOATING_STATUS;
 
+  printf("filter complete");
   tidyCarrier(env, c);
 }
 
