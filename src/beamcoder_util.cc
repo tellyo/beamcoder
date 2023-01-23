@@ -120,7 +120,7 @@ void tidyCarrier(napi_env env, carrier* c) {
     status = napi_delete_async_work(env, c->_request);
     FLOATING_STATUS;
   }
-  // printf("Tidying carrier %p %p\n", c->passthru, c->_request);
+  printf("Tidying carrier %p %p\n", c->passthru, c->_request);
   delete c;
 }
 

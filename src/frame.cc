@@ -2642,14 +2642,14 @@ napi_status fromAVFrame(napi_env env, frameData* f, napi_value* result) {
 void frameFinalizer(napi_env env, void* data, void* hint) {
   AVFrame* frame = (AVFrame*) data;
   av_frame_free(&frame);
-  printf("Freeing a frame.\n");
+  //printf("Freeing a frame.\n");
 }
 
 void frameDataFinalizer(napi_env env, void* data, void* hint) {
   napi_status status;
   int64_t externalMemory;
   frameData* f = (frameData*) data;
-  printf("Freeing frame data for pts = %i\n", f->frame->pts);
+  //printf("Freeing frame data for pts = %i\n", f->frame->pts);
   status = napi_adjust_external_memory(env, -f->extSize, &externalMemory);
   if (status != napi_ok) {
     printf("DEBUG: Failed to adjust external memory downwards on frame delete.\n");
