@@ -1649,7 +1649,6 @@ void filterExecute(napi_env env, void* data) {
 		  av_frame_free(&filtFrame);
         break;
       if (ret < 0) {
-		  av_frame_free(&filtFrame);
         c->status = BEAMCODER_ERROR_FILTER_GET_FRAME;
         c->errorMsg = "Error while filtering.";
         return;

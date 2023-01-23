@@ -2642,7 +2642,7 @@ napi_status fromAVFrame(napi_env env, frameData* f, napi_value* result) {
 void frameFinalizer(napi_env env, void* data, void* hint) {
   AVFrame* frame = (AVFrame*) data;
   av_frame_free(&frame);
-  // printf("Freeing a frame.\n");
+  printf("Freeing a frame.\n");
 }
 
 void frameDataFinalizer(napi_env env, void* data, void* hint) {
