@@ -1240,6 +1240,7 @@ napi_value filterer(napi_env env, napi_callback_info info) {
     uint32_t height;
     std::string pixFmt;
     AVRational timeBase;
+    AVRational frameRate;
     AVRational pixelAspect;
     std::string swPixFmt;
 
@@ -1340,6 +1341,33 @@ napi_value filterer(napi_env env, napi_callback_info info) {
         REJECT_RETURN;
       }
 
+      napi_value frameRateVal;
+      c->status = napi_get_named_property(env, inParamsVal, "frameRate", &frameRateVal);
+      REJECT_RETURN;
+      c->status = napi_is_array(env, frameRateVal, &isArray);
+      REJECT_RETURN;
+      if (isArray) {
+        c->status = napi_get_array_length(env, frameRateVal, &arrayLen);
+        REJECT_RETURN;
+      } else {
+          napi_value arrayLikeProps;
+          c->status = napi_get_property_names(env, frameRateVal, &arrayLikeProps);
+          REJECT_RETURN;
+          c->status = napi_get_array_length(env, arrayLikeProps, &arrayLen);
+          REJECT_RETURN;
+      }
+      if (2 != arrayLen) {
+        REJECT_ERROR_RETURN("Filterer inputParams frameRate must be an array with 2 values representing a rational number.",
+          BEAMCODER_INVALID_ARGS);
+      }
+      for (uint32_t i = 0; i < arrayLen; ++i) {
+        napi_value arrayVal;
+        c->status = napi_get_element(env, frameRateVal, i, &arrayVal); // Will detect if not array or array-like
+        REJECT_RETURN;
+        c->status = napi_get_value_int32(env, arrayVal, (0==i)?&frameRate.num:&frameRate.den);
+        REJECT_RETURN;
+      }
+
       bool hasSoftwarePixelFormat;
       c->status = napi_has_named_property(env, inParamsVal, "swPixelFormat", &hasSoftwarePixelFormat);
       REJECT_RETURN;
@@ -1415,9 +1443,9 @@ napi_value filterer(napi_env env, napi_callback_info info) {
               sampleFormat.c_str(), av_get_channel_layout(channelLayout.c_str()));
     } else {
       snprintf(args, sizeof(args),
-              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
+              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:frame_rate=%d/%d",
               width, height, av_get_pix_fmt(pixFmt.c_str()),
-              timeBase.num, timeBase.den, pixelAspect.num, pixelAspect.den);
+              timeBase.num, timeBase.den, pixelAspect.num, pixelAspect.den, frameRate.num, frameRate.den);
     }
     c->inParams.push_back(args);
   }
