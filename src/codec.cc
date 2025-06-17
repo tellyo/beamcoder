@@ -373,8 +373,10 @@ napi_value getCodecCtxFlags(napi_env env, napi_callback_info info) {
    * Input bitstream might be truncated at a random location
    * instead of only at frame boundaries.
    */
+#if LIBAVCODEC_VERSION_MAJOR < 59
   status = beam_set_bool(env, result, "TRUNCATED", (codec->flags & AV_CODEC_FLAG_TRUNCATED) != 0);
   CHECK_STATUS;
+#endif
   /**
    * Use interlaced DCT.
    */
@@ -521,11 +523,13 @@ napi_value setCodecCtxFlags(napi_env env, napi_callback_info info) {
    * Input bitstream might be truncated at a random location
    * instead of only at frame boundaries.
    */
+#if LIBAVCODEC_VERSION_MAJOR < 59
   status = beam_get_bool(env, value, "TRUNCATED", &present, &flag);
   CHECK_STATUS;
   if (present) { codec->flags = (flag) ?
     codec->flags | AV_CODEC_FLAG_TRUNCATED :
     codec->flags & ~AV_CODEC_FLAG_TRUNCATED; }
+#endif
   /**
    * Use interlaced DCT.
    */
@@ -617,8 +621,10 @@ napi_value getCodecCtxFlags2(napi_env env, napi_callback_info info) {
   /**
    * timecode is in drop frame format. DEPRECATED!!!!
    */
+#if LIBAVCODEC_VERSION_MAJOR < 59
   status = beam_set_bool(env, result, "DROP_FRAME_TIMECODE", (codec->flags2 & AV_CODEC_FLAG2_DROP_FRAME_TIMECODE) != 0);
   CHECK_STATUS;
+#endif
 
   /**
    * Input bitstream might be truncated at a packet boundaries
@@ -703,11 +709,13 @@ napi_value setCodecCtxFlags2(napi_env env, napi_callback_info info) {
   /**
    * timecode is in drop frame format. DEPRECATED!!!!
    */
+#if LIBAVCODEC_VERSION_MAJOR < 59
   status = beam_get_bool(env, value, "DROP_FRAME_TIMECODE", &present, &flag);
   CHECK_STATUS;
   if (present) { codec->flags2 = (flag) ?
     codec->flags2 | AV_CODEC_FLAG2_DROP_FRAME_TIMECODE :
     codec->flags2 & ~AV_CODEC_FLAG2_DROP_FRAME_TIMECODE; }
+#endif
   /**
    * Input bitstream might be truncated at a packet boundaries
    * instead of only at frame boundaries.

@@ -330,7 +330,7 @@ napi_value getIFormatRawCodecID(napi_env env, napi_callback_info info) {
   return result;
 }
 
-napi_value getOFormatPrivDataSize(napi_env env, napi_callback_info info) {
+/*napi_value getOFormatPrivDataSize(napi_env env, napi_callback_info info) {
   napi_status status;
   napi_value result;
   AVOutputFormat* oformat;
@@ -342,7 +342,7 @@ napi_value getOFormatPrivDataSize(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   return result;
-}
+}*/
 
 napi_value getIFormatPrivDataSize(napi_env env, napi_callback_info info) {
   napi_status status;
@@ -565,11 +565,11 @@ napi_status fromAVOutputFormat(napi_env env,
       nullptr, napi_enumerable, (void*) oformat }, // 10
     { "priv_class", nullptr, nullptr, getOFormatPrivClass, nullptr,
       nullptr, napi_enumerable, (void*) oformat },
-    { "priv_data_size", nullptr, nullptr, getOFormatPrivDataSize, nullptr,
-      nullptr, napi_enumerable, (void*) oformat },
+    /*{ "priv_data_size", nullptr, nullptr, getOFormatPrivDataSize, nullptr,
+      nullptr, napi_enumerable, (void*) oformat },*/
     { "_oformat", nullptr, nullptr, nullptr, nullptr, extOFormat, napi_default, nullptr }
   };
-  status = napi_define_properties(env, jsOFormat, 13, desc);
+  status = napi_define_properties(env, jsOFormat, 12, desc);
   PASS_STATUS;
 
   *result = jsOFormat;
@@ -701,6 +701,10 @@ done:
   if ((fmtCtx->oformat == nullptr) || (found == false)) {
     NAPI_THROW_ERROR("Unable to find and/or set output format.");
   }
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
+  // In newer FFmpeg versions, private data allocation and initialization
+  // is handled automatically by FFmpeg's internal functions
+#else
   if (fmtCtx->oformat->priv_data_size > 0) {
     av_freep(&fmtCtx->priv_data);
     if (!(fmtCtx->priv_data = av_mallocz(fmtCtx->oformat->priv_data_size))) {
@@ -711,6 +715,7 @@ done:
       av_opt_set_defaults(fmtCtx->priv_data);
     }
   }
+#endif
 
 over:
   status = napi_get_undefined(env, &result);
@@ -1228,8 +1233,10 @@ napi_value getFmtCtxFlags(napi_env env, napi_callback_info info) {
   status = beam_set_bool(env, result, "SORT_DTS", fmtCtx->flags & AVFMT_FLAG_SORT_DTS);
   CHECK_STATUS;
   // Enable use of private options by delaying codec open (this could be made default once all code is converted)
+#if LIBAVFORMAT_VERSION_MAJOR < 59
   status = beam_set_bool(env, result, "PRIV_OPT", fmtCtx->flags & AVFMT_FLAG_PRIV_OPT);
   CHECK_STATUS;
+#endif
   // Enable fast, but inaccurate seeks for some formats
   status = beam_set_bool(env, result, "FAST_SEEK", fmtCtx->flags & AVFMT_FLAG_FAST_SEEK);
   CHECK_STATUS;
@@ -1336,11 +1343,13 @@ napi_value setFmtCtxFlags(napi_env env, napi_callback_info info) {
     fmtCtx->flags | AVFMT_FLAG_SORT_DTS :
     fmtCtx->flags & ~AVFMT_FLAG_SORT_DTS; }
   // Enable use of private options by delaying codec open (this could be made default once all code is converted)
+#if LIBAVFORMAT_VERSION_MAJOR < 59
   status = beam_get_bool(env, args[0], "PRIV_OPT", &present, &flag);
   CHECK_STATUS;
   if (present) { fmtCtx->flags = (flag) ?
     fmtCtx->flags | AVFMT_FLAG_PRIV_OPT :
     fmtCtx->flags & ~AVFMT_FLAG_PRIV_OPT; }
+#endif
   // Enable fast, but inaccurate seeks for some formats
   status = beam_get_bool(env, args[0], "FAST_SEEK", &present, &flag);
   CHECK_STATUS;

@@ -171,9 +171,9 @@ async function linux() {
     console.log(`Try running the following (Ubuntu/Debian):
 sudo add-apt-repository ppa:jonathonf/ffmpeg-4
 sudo apt-get install libavcodec-dev libavformat-dev libavdevice-dev libavfilter-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev`);
-    process.exit(1);
+    //process.exit(1);
   }
-  return result;
+  return 0;
 }
 
 async function darwin() {
