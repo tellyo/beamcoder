@@ -497,7 +497,7 @@ napi_value getLinkChannelCount(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   napi_value channelCountVal;
-  int channelCount = av_get_channel_layout_nb_channels(filterLink->channel_layout);
+  int channelCount = beam_get_channel_layout_nb_channels(filterLink->channel_layout);
   status = napi_create_int32(env, channelCount, &channelCountVal);
 
   return channelCountVal;
@@ -1017,7 +1017,7 @@ void filtererExecute(napi_env env, void* data) {
       }
       p = c->outParams[i].find("channel_layouts");
       if (p != c->outParams[i].end()) {
-        const int64_t out_channel_layouts[] = { (int64_t)av_get_channel_layout(p->second.c_str()), -1 };
+        const int64_t out_channel_layouts[] = { (int64_t)beam_get_channel_layout(p->second.c_str()), -1 };
         ret = av_opt_set_int_list(sinkCtx, "channel_layouts", out_channel_layouts, -1,
                                   AV_OPT_SEARCH_CHILDREN);
         if (ret < 0) { av_log(NULL, AV_LOG_ERROR, "Cannot set output channel layout\n"); }
@@ -1412,7 +1412,7 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       snprintf(args, sizeof(args),
               "time_base=%d/%d:sample_rate=%d:sample_fmt=%s:channel_layout=%" PRIu64 "",
               timeBase.num, timeBase.den, sampleRate,
-              sampleFormat.c_str(), av_get_channel_layout(channelLayout.c_str()));
+              sampleFormat.c_str(), beam_get_channel_layout(channelLayout.c_str()));
     } else {
       snprintf(args, sizeof(args),
               "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",

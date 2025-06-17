@@ -962,7 +962,7 @@ napi_value setCodecParChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], enumString, strLen + 1, &strLen);
   CHECK_STATUS;
 
-  chanLay = av_get_channel_layout((const char *) enumString);
+  chanLay = beam_get_channel_layout((const char *) enumString);
   free(enumString);
   if (chanLay != 0) {
     c->channel_layout = chanLay;

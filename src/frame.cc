@@ -1038,7 +1038,7 @@ napi_value setFrameChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], name, len + 1, &len);
   CHECK_STATUS;
 
-  f->frame->channel_layout = av_get_channel_layout(name);
+  f->frame->channel_layout = beam_get_channel_layout(name);
   free(name);
 
 done:
@@ -2319,7 +2319,7 @@ napi_value makeFrame(napi_env env, napi_callback_info info) {
       int ret;
 
       if (f->frame->channels < 2) { // Bump up from default of 1 if necessary
-        f->frame->channels = av_get_channel_layout_nb_channels(f->frame->channel_layout);
+        f->frame->channels = beam_get_channel_layout_nb_channels(f->frame->channel_layout);
         // printf("Calculated channel number %i\n", f->frame->channels);
       }
 

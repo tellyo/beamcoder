@@ -3700,11 +3700,11 @@ napi_value setCodecCtxChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], name, strLen + 1, &strLen);
   CHECK_STATUS;
 
-  chanLay = av_get_channel_layout(name);
+  chanLay = beam_get_channel_layout(name);
   free(name);
   if (chanLay != 0) {
     codec->channel_layout = chanLay;
-    codec->channels = av_get_channel_layout_nb_channels(chanLay);
+    codec->channels = beam_get_channel_layout_nb_channels(chanLay);
   } else {
     NAPI_THROW_ERROR("Channel layout name is not recognized. Set 'null' for '0 channels'.");
   }
@@ -3768,7 +3768,7 @@ napi_value setCodecCtxReqChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], name, strLen + 1, &strLen);
   CHECK_STATUS;
 
-  chanLay = av_get_channel_layout(name);
+  chanLay = beam_get_channel_layout(name);
   free(name);
   if (chanLay != 0) {
     codec->request_channel_layout = chanLay;

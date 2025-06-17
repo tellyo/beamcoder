@@ -982,6 +982,36 @@ void beam_get_channel_layout_string(char *buf, int buf_size, int nb_channels, ui
 #endif
 }
 
+uint64_t beam_get_channel_layout(const char *name) {
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+  // For newer FFmpeg versions (5.0+), use the new channel layout API
+  AVChannelLayout ch_layout = {};
+  if (av_channel_layout_from_string(&ch_layout, name) < 0) {
+    return 0;
+  }
+  uint64_t layout = ch_layout.u.mask;
+  av_channel_layout_uninit(&ch_layout);
+  return layout;
+#else
+  // For older FFmpeg versions, use the legacy function
+  return av_get_channel_layout(name);
+#endif
+}
+
+int beam_get_channel_layout_nb_channels(uint64_t channel_layout) {
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+  // For newer FFmpeg versions (5.0+), use the new channel layout API
+  AVChannelLayout ch_layout = {};
+  av_channel_layout_from_mask(&ch_layout, channel_layout);
+  int nb_channels = ch_layout.nb_channels;
+  av_channel_layout_uninit(&ch_layout);
+  return nb_channels;
+#else
+  // For older FFmpeg versions, use the legacy function
+  return av_get_channel_layout_nb_channels(channel_layout);
+#endif
+}
+
 std::unordered_map<int, std::string> beam_ff_compliance_fmap = {
   { FF_COMPLIANCE_VERY_STRICT, "very-strict" },
   { FF_COMPLIANCE_STRICT, "strict" },
