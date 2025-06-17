@@ -428,7 +428,7 @@ napi_status fromAVCodec(napi_env env, const AVCodec* codec, napi_value *result) 
     index = 0;
     while (*chanlay != 0) {
       char chanLayStr[64];
-      av_get_channel_layout_string(chanLayStr, 64, 0, *chanlay);
+      beam_get_channel_layout_string(chanLayStr, 64, 0, *chanlay);
       status = napi_create_string_utf8(env, chanLayStr, NAPI_AUTO_LENGTH, &element);
       PASS_STATUS;
       status = napi_set_element(env, array, index++, element);

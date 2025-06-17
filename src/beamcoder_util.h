@@ -203,4 +203,7 @@ napi_status makeAVDictionary(napi_env env, napi_value options, AVDictionary** di
 napi_status fromContextPrivData(napi_env env, void *privData, napi_value* result);
 napi_status toContextPrivData(napi_env env, napi_value params, void* priv_data);
 
+// FFmpeg compatibility wrapper for channel layout string functions
+void beam_get_channel_layout_string(char *buf, int buf_size, int nb_channels, uint64_t channel_layout);
+
 #endif // BEAMCODER_UTIL_H

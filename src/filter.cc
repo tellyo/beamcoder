@@ -511,7 +511,7 @@ napi_value getLinkChannelLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   char channelLayoutStr[30];
-  av_get_channel_layout_string(channelLayoutStr, 30, -1, filterLink->channel_layout);
+  beam_get_channel_layout_string(channelLayoutStr, 30, -1, filterLink->channel_layout);
 
   napi_value channelLayoutVal;
   status = napi_create_string_utf8(env, channelLayoutStr, NAPI_AUTO_LENGTH, &channelLayoutVal);

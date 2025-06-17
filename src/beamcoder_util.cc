@@ -766,7 +766,7 @@ napi_status fromContextPrivData(napi_env env, void *privData, napi_value* result
         if (ret < 0) {
           return napi_number_expected;
         }
-        av_get_channel_layout_string(chanLayStr, 64, 0, iValue);
+        beam_get_channel_layout_string(chanLayStr, 64, 0, iValue);
         // printf("fromPrivOptions: channel layout option %s: %lli - %s\n", option->name, iValue, chanLayStr);
         status = beam_set_string_utf8(env, optionsVal, option->name, chanLayStr);
         PASS_STATUS;
@@ -969,6 +969,18 @@ std::unordered_map<int, std::string> beam_av_audio_service_type_fmap = {
   { AV_AUDIO_SERVICE_TYPE_NB, "nb" }
 };
 const beamEnum* beam_av_audio_service_type = new beamEnum(beam_av_audio_service_type_fmap);
+
+// FFmpeg compatibility wrapper for channel layout string functions
+void beam_get_channel_layout_string(char *buf, int buf_size, int nb_channels, uint64_t channel_layout) {
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+  // For newer FFmpeg versions (5.0+), use the new channel layout API
+  AVChannelLayout ch_layout = AV_CHANNEL_LAYOUT_MASK(nb_channels, channel_layout);
+  av_channel_layout_describe(&ch_layout, buf, buf_size);
+#else
+  // For older FFmpeg versions, use the legacy function
+  av_get_channel_layout_string(buf, buf_size, nb_channels, channel_layout);
+#endif
+}
 
 std::unordered_map<int, std::string> beam_ff_compliance_fmap = {
   { FF_COMPLIANCE_VERY_STRICT, "very-strict" },
