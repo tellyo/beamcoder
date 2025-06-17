@@ -19,6 +19,8 @@
   14 Ormiscaig, Aultbea, Achnasheen, IV22 2JJ  U.K.
 */
 
+#define FF_API_OLD_CHANNEL_LAYOUT 1
+
 #include "node_api.h"
 #include "beamcoder_util.h"
 #include "log.h"
@@ -32,8 +34,6 @@
 #include "packet.h"
 #include "codec_par.h"
 #include <stdio.h>
-
-#define FF_API_OLD_CHANNEL_LAYOUT 1
 
 extern "C" {
   #include <libavcodec/avcodec.h>
@@ -423,15 +423,15 @@ napi_status fromAVCodec(napi_env env, const AVCodec* codec, napi_value *result) 
     PASS_STATUS;
   }
 
-  if (codec->channel_layouts != nullptr) {
+  //TODO: Fix this
+  /*if (codec->ch_layouts != nullptr) {
     status = napi_create_array(env, &array);
     PASS_STATUS;
-    chanlay = codec->channel_layouts;
+    chanlay = codec->ch_layouts;
     index = 0;
     while (*chanlay != 0) {
       char chanLayStr[64];
-      printf("DEBUG: fromAVCodec channel layout: %" PRIu64 "\n", *chanlay);
-      beam_get_channel_layout_string(chanLayStr, 64, 0, *chanlay);
+      av_channel_layout_describe(&chanlay, chanLayStr, 64);
       status = napi_create_string_utf8(env, chanLayStr, NAPI_AUTO_LENGTH, &element);
       PASS_STATUS;
       status = napi_set_element(env, array, index++, element);
@@ -440,10 +440,10 @@ napi_status fromAVCodec(napi_env env, const AVCodec* codec, napi_value *result) 
     }
     status = napi_set_named_property(env, value, "channel_layouts", array);
     PASS_STATUS;
-  } else {
+  } else {*/
     status = napi_set_named_property(env, value, "channel_layouts", nullval);
     PASS_STATUS;
-  }
+  //}
 
   status = beam_set_uint32(env, value, "max_lowres", codec->max_lowres);
   PASS_STATUS;

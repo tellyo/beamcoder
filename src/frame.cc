@@ -224,7 +224,7 @@ napi_value getFrameFormat(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   // Assume audio data using FFmpeg's own technique
-  if (f->frame->nb_samples > 0 && (f->frame->channel_layout || f->frame->channels > 0)) {
+  if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->f->frame->ch_layout.nb_channels > 0)) {
     name = av_get_sample_fmt_name((AVSampleFormat) f->frame->format);
   }
   if (name == nullptr) { // Assume that it is video data
@@ -278,7 +278,7 @@ napi_value setFrameFormat(napi_env env, napi_callback_info info) {
     format = (int) av_get_sample_fmt((const char*) name);
     if ((format != AV_SAMPLE_FMT_NONE) && (f->frame->nb_samples == 0)) {
       f->frame->nb_samples = 1; // Cludge ... found a sample format ... force audio mode
-      f->frame->channels = 1;
+      f->f->frame->ch_layout.nb_channels = 1;
     }
   }
 
@@ -999,9 +999,9 @@ napi_value getFrameChanLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   char channelLayoutName[64];
-  printf("DEBUG: getFrameChanLayout channel layout: %" PRIu64 "\n", f->frame->channel_layout);
+  printf("DEBUG: getFrameChanLayout channel layout: %" PRIu64 "\n", f->frame->ch_layout.u.mask);
   beam_get_channel_layout_string(channelLayoutName, 64, 0, 
-    f->frame->channel_layout ? f->frame->channel_layout : av_get_default_channel_layout(f->frame->channels));
+    f->frame->ch_layout.u.mask ? f->frame->ch_layout.u.mask : av_get_default_channel_layout(f->f->frame->ch_layout.nb_channels));
 
   status = napi_create_string_utf8(env, channelLayoutName, NAPI_AUTO_LENGTH, &result);
   CHECK_STATUS;
@@ -1027,7 +1027,7 @@ napi_value setFrameChanLayout(napi_env env, napi_callback_info info) {
   status = napi_typeof(env, args[0], &type);
   CHECK_STATUS;
   if ((type == napi_null) || (type == napi_undefined)) {
-    f->frame->channel_layout = 0;
+    f->frame->ch_layout.u.mask = 0;
     goto done;
   }
   if (type != napi_string) {
@@ -1039,7 +1039,7 @@ napi_value setFrameChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], name, len + 1, &len);
   CHECK_STATUS;
 
-  f->frame->channel_layout = beam_get_channel_layout(name);
+  f->frame->ch_layout.u.mask = beam_get_channel_layout(name);
   free(name);
 
 done:
@@ -1793,7 +1793,7 @@ napi_value getFramePktDuration(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &f);
   CHECK_STATUS;
 
-  status = napi_create_int64(env, f->frame->pkt_duration, &result);
+  status = napi_create_int64(env, f->frame->duration, &result);
   CHECK_STATUS;
   return result;
 }
@@ -1817,7 +1817,7 @@ napi_value setFramePktDuration(napi_env env, napi_callback_info info) {
   if (type != napi_number) {
     NAPI_THROW_ERROR("Frame pkt_duration property must be set with a number.");
   }
-  status = napi_get_value_int64(env, args[0], &f->frame->pkt_duration);
+  status = napi_get_value_int64(env, args[0], &f->frame->duration);
   CHECK_STATUS;
 
   status = napi_get_undefined(env, &result);
@@ -1949,7 +1949,7 @@ napi_value getFrameChannels(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &f);
   CHECK_STATUS;
 
-  status = napi_create_int32(env, f->frame->channels, &result);
+  status = napi_create_int32(env, f->frame->ch_layout.nb_channels, &result);
   CHECK_STATUS;
   return result;
 }
@@ -1973,7 +1973,7 @@ napi_value setFrameChannels(napi_env env, napi_callback_info info) {
   if (type != napi_number) {
     NAPI_THROW_ERROR("Frame channels property must be set with a number.");
   }
-  status = napi_get_value_int32(env, args[0], (int32_t*) &f->frame->channels);
+  status = napi_get_value_int32(env, args[0], (int32_t*) &f->frame->ch_layout.nb_channels);
   CHECK_STATUS;
 
   status = napi_get_undefined(env, &result);
@@ -2313,18 +2313,18 @@ napi_value makeFrame(napi_env env, napi_callback_info info) {
         }
       }
     }
-    else if (f->frame->nb_samples > 0 && (f->frame->channel_layout || f->frame->channels > 0)) {
+    else if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->frame->ch_layout.nb_channels > 0)) {
       int channels;
       // int planar = av_sample_fmt_is_planar((AVSampleFormat) f->frame->format);
       // int planes;
       int ret;
 
-      if (f->frame->channels < 2) { // Bump up from default of 1 if necessary
-        f->frame->channels = beam_get_channel_layout_nb_channels(f->frame->channel_layout);
-        // printf("Calculated channel number %i\n", f->frame->channels);
+      if (f->f->frame->ch_layout.nb_channels < 2) { // Bump up from default of 1 if necessary
+        f->f->frame->ch_layout.nb_channels = beam_get_channel_layout_nb_channels(f->frame->ch_layout.u.mask);
+        // printf("Calculated channel number %i\n", f->f->frame->ch_layout.nb_channels);
       }
 
-      channels = f->frame->channels;
+      channels = f->f->frame->ch_layout.nb_channels;
       // planes = planar ? channels : 1;
 
       // TODO: is this needed? CHECK_CHANNELS_CONSISTENCY(f->frame);
@@ -2368,11 +2368,11 @@ napi_value alloc(napi_env env, napi_callback_info info) {
         }
       }
     }
-    else if (f->frame->nb_samples > 0 && (f->frame->channel_layout || f->frame->channels > 0)) {
+    else if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->f->frame->ch_layout.nb_channels > 0)) {
       int planar = av_sample_fmt_is_planar((AVSampleFormat) f->frame->format);
       if (planar) {
         for ( int x = 0 ; x < AV_NUM_DATA_POINTERS ; x++ ) {
-          if (x < f->frame->channels) {
+          if (x < f->f->frame->ch_layout.nb_channels) {
             f->frame->buf[x] = av_buffer_alloc(f->frame->linesize[0]);
             f->frame->data[x] = f->frame->buf[x]->data;
           } else {
@@ -2478,16 +2478,16 @@ napi_value frameToJSON(napi_env env, napi_callback_info info) {
   DECLARE_GETTER3("pts", f->frame->pts != AV_NOPTS_VALUE, getFramePTS, f);
   DECLARE_GETTER3("pkt_dts", f->frame->pkt_dts != AV_NOPTS_VALUE, getFramePktDTS, f);
   DECLARE_GETTER3("coded_picture_number", f->frame->coded_picture_number > 0, getFrameCodedPicNum, f);
-  DECLARE_GETTER3("display_picture_number", f->frame->display_picture_number > 0, getFrameDispPicNum, f);
+  // display_picture_number removed in FFmpeg 5.0+
   DECLARE_GETTER3("quality", f->frame->quality > 0, getFrameQuality, f);
   DECLARE_GETTER3("repeat_pict", f->frame->repeat_pict > 0, getFrameRepeatPict, f);
   DECLARE_GETTER3("interlaced_frame", f->frame->interlaced_frame != 0, getFrameInterlaced, f);
   DECLARE_GETTER3("top_field_first", f->frame->top_field_first != 0, getFrameTopFieldFirst, f);
   DECLARE_GETTER3("palette_has_changed", f->frame->palette_has_changed != 0, getFramePalHasChanged, f);
-  DECLARE_GETTER3("reordered_opaque", f->frame->reordered_opaque != AV_NOPTS_VALUE, getFrameReorderOpq, f);
-    // 20
+  DECLARE_GETTER3("reordered_opaque", false, getFrameReorderOpq, f);
+  
   DECLARE_GETTER3("sample_rate", f->frame->sample_rate > 0, getFrameSampleRate, f);
-  DECLARE_GETTER3("channel_layout", f->frame->channel_layout != 0, getFrameChanLayout, f);
+  DECLARE_GETTER3("channel_layout", f->frame->ch_layout.u.mask != 0, getFrameChanLayout, f);
   DECLARE_GETTER3("buf_sizes", f->frame->buf[0] != nullptr, getFrameBufSizes, f);
   DECLARE_GETTER3("side_data", f->frame->nb_side_data > 0, getFrameSideData, f);
   DECLARE_GETTER3("flags", f->frame->flags > 0, getFrameFlags, f);
@@ -2499,10 +2499,10 @@ napi_value frameToJSON(napi_env env, napi_callback_info info) {
     // 30
   DECLARE_GETTER3("best_effort_timestamp", f->frame->best_effort_timestamp != AV_NOPTS_VALUE, getFrameBestEffortTS, f);
   DECLARE_GETTER3("pkt_pos", f->frame->pkt_pos >= 0, getFramePktPos, f);
-  DECLARE_GETTER3("pkt_duration", f->frame->pkt_duration > 0, getFramePktDuration, f);
+  DECLARE_GETTER3("pkt_duration", f->frame->duration > 0, getFramePktDuration, f);
   DECLARE_GETTER3("metadata", f->frame->metadata != nullptr, getFrameMetadata, f);
   DECLARE_GETTER3("decode_error_flags", f->frame->decode_error_flags > 0, getFrameDecodeErrFlags, f);
-  DECLARE_GETTER3("channels", f->frame->channels > 0, getFrameChannels, f);
+  DECLARE_GETTER3("channels", f->frame->ch_layout.nb_channels > 0, getFrameChannels, f);
   DECLARE_GETTER3("pkt_size", f->frame->pkt_size >= 0, getFramePktSize, f);
   DECLARE_GETTER3("crop_top", f->frame->crop_top > 0, getFrameCropTop, f);
   DECLARE_GETTER3("crop_bottom", f->frame->crop_bottom > 0, getFrameCropBottom, f);

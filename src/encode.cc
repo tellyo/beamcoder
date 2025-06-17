@@ -135,12 +135,12 @@ create:
   CHECK_BAIL;
 
   if ((encoder->sample_fmt != AV_SAMPLE_FMT_NONE) && 
-      (encoder->sample_rate > 0) && (encoder->channel_layout != 0)) {
+      (encoder->sample_rate > 0) && (encoder->ch_layout.u.mask != 0)) {
     // For audio encodes open the encoder if sufficient parameters have been provided
     // Encoder specific parameters will then be set up and available before the first encode
     printf("encoder->sample_fmt: %d\n", encoder->sample_fmt);
     printf("encoder->sample_rate: %d\n", encoder->sample_rate);
-    printf("encoder->channel_layout: %" PRIu64 "\n", encoder->channel_layout);
+    printf("encoder->channel_layout: %" PRIu64 "\n", encoder->ch_layout.u.mask);
     printf("encoder->ch_layout.nb_channels: %d\n", encoder->ch_layout.nb_channels);
     printf("encoder->ch_layout.u.mask: %" PRIu64 "\n", encoder->ch_layout.u.mask);
     printf("encoder->ch_layout.u.order: %d\n", encoder->ch_layout.order);

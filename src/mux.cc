@@ -21,10 +21,10 @@
 
 #include "mux.h"
 
-int write_packet(void *opaque, uint8_t *buf, int buf_size)
+int write_packet(void *opaque, const uint8_t *buf, int buf_size)
 {
   Adaptor *adaptor = (Adaptor *)opaque;
-  return adaptor->write(buf, buf_size);
+  return adaptor->write(const_cast<uint8_t*>(buf), buf_size);
 }
 
 napi_value muxer(napi_env env, napi_callback_info info) {

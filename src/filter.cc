@@ -497,7 +497,7 @@ napi_value getLinkChannelCount(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   napi_value channelCountVal;
-  int channelCount = beam_get_channel_layout_nb_channels(filterLink->channel_layout);
+  int channelCount = beam_get_channel_layout_nb_channels(filterLink->ch_layout.u.mask);
   status = napi_create_int32(env, channelCount, &channelCountVal);
 
   return channelCountVal;
@@ -511,8 +511,7 @@ napi_value getLinkChannelLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   char channelLayoutStr[30];
-  printf("DEBUG: getLinkChannelLayout channel layout: %" PRIu64 "\n", filterLink->channel_layout);
-  beam_get_channel_layout_string(channelLayoutStr, 30, -1, filterLink->channel_layout);
+  beam_get_channel_layout_string(channelLayoutStr, 30, -1, filterLink->ch_layout.u.mask);
 
   napi_value channelLayoutVal;
   status = napi_create_string_utf8(env, channelLayoutStr, NAPI_AUTO_LENGTH, &channelLayoutVal);
@@ -524,7 +523,6 @@ napi_value getLinkChannelLayout(napi_env env, napi_callback_info info) {
 napi_value getLinkSampleRate(napi_env env, napi_callback_info info) {
   napi_status status;
   AVFilterLink* filterLink;
-
   status = napi_get_cb_info(env, info, nullptr, nullptr, nullptr, (void**) &filterLink);
   CHECK_STATUS;
 
@@ -1049,46 +1047,6 @@ void filtererExecute(napi_env env, void* data) {
     c->status = BEAMCODER_ERROR_ENOMEM;
     c->errorMsg = "Failed to parse filter graph.";
     goto end;
-  }
-
-  {
-    size_t filterIndex = 0;
-    for (filtererInData &data : c->inData)
-    {
-      if (data.hardwareDeviceContext)
-      {
-        if (filterIndex >= c->filterGraph->nb_filters ||
-            !c->filterGraph->filters[filterIndex]->nb_outputs) {
-          c->status = BEAMCODER_ERROR_ENOMEM;
-          c->errorMsg = "Unexpected out of bounds when allocating hardware frame context for filter.";
-          goto end;
-        }
-
-        AVFilterLink *filterLink = c->filterGraph->filters[filterIndex]->outputs[0];
-        filterLink->hw_frames_ctx = av_hwframe_ctx_alloc(data.hardwareDeviceContext);
-        if (!filterLink->hw_frames_ctx) {
-          c->status = BEAMCODER_ERROR_ENOMEM;
-          c->errorMsg = "Failed to allocate hardware frame context for filter.";
-          goto end;
-        }
-
-        AVHWFramesContext *linkFramesContext = (AVHWFramesContext *)(filterLink->hw_frames_ctx->data);
-        linkFramesContext->sw_format = data.softwarePixelFormat;
-        linkFramesContext->width = data.width;
-        linkFramesContext->height = data.height;
-        linkFramesContext->format = data.pixelFormat;
-
-        int initErr = av_hwframe_ctx_init(filterLink->hw_frames_ctx);
-        if (initErr) {
-          c->status = BEAMCODER_ERROR_ENOMEM;
-          c->errorMsg = "Failed to initialize hardware frame context for filter.";
-          goto end;
-        }
-      }
-
-      ++filterIndex;
-      av_buffer_unref(&data.hardwareDeviceContext);
-    }
   }
 
   if ((ret = avfilter_graph_config(c->filterGraph, NULL)) < 0) {
@@ -1887,3 +1845,4 @@ napi_value filter(napi_env env, napi_callback_info info) {
 
   return promise;
 };
+

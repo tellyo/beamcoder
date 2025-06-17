@@ -761,16 +761,36 @@ napi_status fromContextPrivData(napi_env env, void *privData, napi_value* result
         status = beam_set_string_utf8(env, optionsVal, option->name, "unmapped type: color");
         PASS_STATUS;
         break;
+#if LIBAVCODEC_VERSION_MAJOR >= 59
+      case AV_OPT_TYPE_CHLAYOUT:
+        {
+          AVChannelLayout layout = { 
+            .order = AV_CHANNEL_ORDER_UNSPEC,
+            .nb_channels = 0,
+            .u = { .mask = 0 },
+            .opaque = nullptr
+          };
+          ret = av_opt_get_chlayout(privData, option->name, 0, &layout);
+          if (ret < 0) {
+            return napi_number_expected;
+          }
+          av_channel_layout_describe(&layout, chanLayStr, 64);
+          av_channel_layout_uninit(&layout);
+          status = beam_set_string_utf8(env, optionsVal, option->name, chanLayStr);
+          PASS_STATUS;
+        }
+        break;
+#else
       case AV_OPT_TYPE_CHANNEL_LAYOUT:
         ret = av_opt_get_channel_layout(privData, option->name, 0, &iValue);
         if (ret < 0) {
           return napi_number_expected;
         }
         beam_get_channel_layout_string(chanLayStr, 64, 0, iValue);
-        // printf("fromPrivOptions: channel layout option %s: %lli - %s\n", option->name, iValue, chanLayStr);
         status = beam_set_string_utf8(env, optionsVal, option->name, chanLayStr);
         PASS_STATUS;
         break;
+#endif
       case AV_OPT_TYPE_BOOL:
         ret = av_opt_get_int(privData, option->name, 0, &iValue);
         if (ret < 0) {
@@ -1037,23 +1057,9 @@ std::unordered_map<int, std::string> beam_ff_dct_fmap = {
 };
 const beamEnum* beam_ff_dct = new beamEnum(beam_ff_dct_fmap);
 
-std::unordered_map<int, std::string> beam_ff_idct_fmap = {
-  { FF_IDCT_AUTO, "auto" },
-  { FF_IDCT_INT, "int" },
-  { FF_IDCT_SIMPLE, "simple" },
-  { FF_IDCT_SIMPLEMMX, "simplemmx" },
-  { FF_IDCT_ARM, "arm" },
-  { FF_IDCT_ALTIVEC, "altivec" },
-  { FF_IDCT_SIMPLEARM, "simplearm" },
-  { FF_IDCT_XVID, "xvid" },
-  { FF_IDCT_SIMPLEARMV5TE, "simplearmv5te" },
-  { FF_IDCT_SIMPLEARMV6, "simplearmv6" },
-  { FF_IDCT_FAAN, "faan" },
-  { FF_IDCT_SIMPLENEON, "simpleneon" },
-  { FF_IDCT_NONE, "none" },
-  { FF_IDCT_SIMPLEAUTO, "simpleauto" },
-};
-const beamEnum* beam_ff_idct = new beamEnum(beam_ff_idct_fmap);
+std::unordered_map<int, std::string> beam_idct_fmap = {};
+
+const beamEnum* beam_ff_idct = new beamEnum(beam_idct_fmap);
 
 std::unordered_map<int, std::string> beam_avdiscard_fmap = {
   { AVDISCARD_NONE, "none" },
@@ -1087,7 +1093,7 @@ std::unordered_map<int, std::string> beam_avmedia_type_fmap = {
 };
 const beamEnum* beam_avmedia_type = new beamEnum(beam_avmedia_type_fmap);
 
-std::unordered_map<int, std::string> beam_option_type_fmap = {
+std::unordered_map<int, std::string> beam_opt_type_fmap = {
   { AV_OPT_TYPE_FLAGS, "flags" },
   { AV_OPT_TYPE_INT, "int" },
   { AV_OPT_TYPE_INT64, "int64" },
@@ -1095,20 +1101,24 @@ std::unordered_map<int, std::string> beam_option_type_fmap = {
   { AV_OPT_TYPE_FLOAT, "float" },
   { AV_OPT_TYPE_STRING, "string" },
   { AV_OPT_TYPE_RATIONAL, "rational" },
-  { AV_OPT_TYPE_BINARY, "binary" }, ///< offset must point to a pointer immediately followed by an int for the length
+  { AV_OPT_TYPE_BINARY, "binary" },
   { AV_OPT_TYPE_DICT, "dict" },
   { AV_OPT_TYPE_UINT64, "uint64" },
   { AV_OPT_TYPE_CONST, "const" },
-  { AV_OPT_TYPE_IMAGE_SIZE, "image_size" }, ///< offset must point to two consecutive integers
+  { AV_OPT_TYPE_IMAGE_SIZE, "image_size" },
   { AV_OPT_TYPE_PIXEL_FMT, "pixel_fmt" },
   { AV_OPT_TYPE_SAMPLE_FMT, "sample_fmt" },
-  { AV_OPT_TYPE_VIDEO_RATE, "video_rate" }, ///< offset must point to AVRational
+  { AV_OPT_TYPE_VIDEO_RATE, "video_rate" },
   { AV_OPT_TYPE_DURATION, "duration" },
   { AV_OPT_TYPE_COLOR, "color" },
-  { AV_OPT_TYPE_CHANNEL_LAYOUT, "channel_layout" },
-  { AV_OPT_TYPE_BOOL, "bool" }
+  { AV_OPT_TYPE_BOOL, "bool" },
+#if LIBAVCODEC_VERSION_MAJOR >= 59
+  { AV_OPT_TYPE_CHLAYOUT, "channel_layout" }
+#else
+  { AV_OPT_TYPE_CHANNEL_LAYOUT, "channel_layout" }
+#endif
 };
-const beamEnum* beam_option_type = new beamEnum(beam_option_type_fmap);
+const beamEnum* beam_opt_type = new beamEnum(beam_opt_type_fmap);
 
 std::unordered_map<int, std::string> beam_avoid_neg_ts_fmap = {
   { AVFMT_AVOID_NEG_TS_AUTO, "auto" },
