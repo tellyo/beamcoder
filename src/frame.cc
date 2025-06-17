@@ -999,6 +999,7 @@ napi_value getFrameChanLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   char channelLayoutName[64];
+  printf("DEBUG: getFrameChanLayout channel layout: %" PRIu64 "\n", f->frame->channel_layout);
   beam_get_channel_layout_string(channelLayoutName, 64, 0, 
     f->frame->channel_layout ? f->frame->channel_layout : av_get_default_channel_layout(f->frame->channels));
 

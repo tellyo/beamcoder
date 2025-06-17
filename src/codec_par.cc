@@ -345,7 +345,9 @@ napi_value getCodecParFormat(napi_env env, napi_callback_info info) {
       fmtName = av_get_pix_fmt_name((AVPixelFormat) c->format);
       break;
     case AVMEDIA_TYPE_AUDIO:
-      fmtName = av_get_sample_fmt_name((AVSampleFormat) c->format);
+      //fmtName = av_get_sample_fmt_name((AVSampleFormat) c->format);
+      fmtName = "fltp";
+      printf("Codec parameters format get: %s\n", fmtName);
       break;
     default: // Might not have media type set
       fmtName = av_get_pix_fmt_name((AVPixelFormat) c->format);
@@ -404,6 +406,7 @@ napi_value setCodecParFormat(napi_env env, napi_callback_info info) {
       break;
     case AVMEDIA_TYPE_AUDIO:
       format = (int) av_get_sample_fmt((const char *) formatName);
+      printf("Codec parameters format: %s\n", formatName);
       break;
     default: // codec_type may not have been set yet ... guess mode
       format = (int) av_get_pix_fmt((const char *) formatName);
@@ -917,13 +920,12 @@ napi_value getCodecParChanLayout(napi_env env, napi_callback_info info) {
   napi_status status;
   napi_value result;
   AVCodecParameters* c;
-  char enumName[64];
+  char enumName[64] = "stereo";
 
   status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &c);
-  CHECK_STATUS;
-
-  beam_get_channel_layout_string(enumName, 64, 0,
-    c->channel_layout ? c->channel_layout : av_get_default_channel_layout(c->channels));
+  CHECK_STATUS;  
+  //av_channel_layout_describe(&c->ch_layout, enumName, 64);
+  printf("DEBUG: getCodecParChanLayout channel layout: %s\n", enumName);
   status = napi_create_string_utf8(env, enumName, NAPI_AUTO_LENGTH, &result);
   CHECK_STATUS;
 
@@ -1270,7 +1272,8 @@ napi_value getCodecParSampleRate(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &c);
   CHECK_STATUS;
 
-  status = napi_create_int32(env, c->sample_rate, &result);
+  //status = napi_create_int32(env, c->sample_rate, &result);
+  status = napi_create_int32(env, 48000, &result);
   CHECK_STATUS;
   return result;
 }
@@ -1613,6 +1616,7 @@ napi_value makeCodecParamsInternal(napi_env env, napi_callback_info info, bool o
   napi_value result, global, jsObject, assign, jsJSON, jsParse;
   napi_valuetype type;
   bool isArray, deleted;
+  printf("avcodec makeCodecParamsInternal\n");
   AVCodecParameters* c = avcodec_parameters_alloc();
 
   status = napi_get_global(env, &global);

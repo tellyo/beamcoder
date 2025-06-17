@@ -975,6 +975,7 @@ void beam_get_channel_layout_string(char *buf, int buf_size, int nb_channels, ui
 #if LIBAVUTIL_VERSION_MAJOR >= 57
   // For newer FFmpeg versions (5.0+), use the new channel layout API
   AVChannelLayout ch_layout = {};
+  printf("DEBUG: beam_get_channel_layout_string channel layout: %" PRIu64 "\n", channel_layout);
   av_channel_layout_from_mask(&ch_layout, channel_layout);
   av_channel_layout_describe(&ch_layout, buf, buf_size);
   av_channel_layout_uninit(&ch_layout);

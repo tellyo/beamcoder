@@ -33,6 +33,8 @@
 #include "codec_par.h"
 #include <stdio.h>
 
+#define FF_API_OLD_CHANNEL_LAYOUT 1
+
 extern "C" {
   #include <libavcodec/avcodec.h>
   #include <libavdevice/avdevice.h>
@@ -428,6 +430,7 @@ napi_status fromAVCodec(napi_env env, const AVCodec* codec, napi_value *result) 
     index = 0;
     while (*chanlay != 0) {
       char chanLayStr[64];
+      printf("DEBUG: fromAVCodec channel layout: %" PRIu64 "\n", *chanlay);
       beam_get_channel_layout_string(chanLayStr, 64, 0, *chanlay);
       status = napi_create_string_utf8(env, chanLayStr, NAPI_AUTO_LENGTH, &element);
       PASS_STATUS;

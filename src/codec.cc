@@ -3661,8 +3661,8 @@ napi_value getCodecCtxChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, &argc, nullptr, nullptr, (void**) &codec);
   CHECK_STATUS;
 
-  beam_get_channel_layout_string(channelLayoutName, 64, 0,
-    codec->channel_layout ? codec->channel_layout : av_get_default_channel_layout(codec->channels));
+  av_channel_layout_describe(&codec->ch_layout, channelLayoutName, 64);
+
   status = napi_create_string_utf8(env, channelLayoutName, NAPI_AUTO_LENGTH, &result);
   CHECK_STATUS;
 
@@ -3701,13 +3701,15 @@ napi_value setCodecCtxChanLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   chanLay = beam_get_channel_layout(name);
-  free(name);
+  av_channel_layout_from_string(&codec->ch_layout, name);
+  printf("ch_layout: %" PRIu64 "\n", codec->ch_layout.u.mask);
   if (chanLay != 0) {
-    codec->channel_layout = chanLay;
+    codec->channel_layout = chanLay;   
     codec->channels = beam_get_channel_layout_nb_channels(chanLay);
   } else {
     NAPI_THROW_ERROR("Channel layout name is not recognized. Set 'null' for '0 channels'.");
   }
+  free(name);
 
 done:
   status = napi_get_undefined(env, &result);
@@ -3726,7 +3728,7 @@ napi_value getCodecCtxReqChanLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   if (codec->request_channel_layout) {
-    beam_get_channel_layout_string(channelLayoutName, 64, 0, codec->request_channel_layout);
+    av_channel_layout_describe(&codec->ch_layout, channelLayoutName, 64);
     status = napi_create_string_utf8(env, channelLayoutName, NAPI_AUTO_LENGTH, &result);
     CHECK_STATUS;
   } else {
@@ -7332,7 +7334,7 @@ napi_value extractParams(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
   status = napi_get_value_external(env, extCodec, (void**) &codecCtx);
   CHECK_STATUS;
-
+  printf("avcodec extractParams\n");
   codecPar = avcodec_parameters_alloc();
   if ((ret = avcodec_parameters_from_context(codecPar, codecCtx))) {
     NAPI_THROW_ERROR(avErrorMsg("Failed to extract parameters from codec context: ", ret));

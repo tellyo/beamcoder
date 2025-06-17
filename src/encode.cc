@@ -138,7 +138,14 @@ create:
       (encoder->sample_rate > 0) && (encoder->channel_layout != 0)) {
     // For audio encodes open the encoder if sufficient parameters have been provided
     // Encoder specific parameters will then be set up and available before the first encode
+    printf("encoder->sample_fmt: %d\n", encoder->sample_fmt);
+    printf("encoder->sample_rate: %d\n", encoder->sample_rate);
+    printf("encoder->channel_layout: %" PRIu64 "\n", encoder->channel_layout);
+    printf("encoder->ch_layout.nb_channels: %d\n", encoder->ch_layout.nb_channels);
+    printf("encoder->ch_layout.u.mask: %" PRIu64 "\n", encoder->ch_layout.u.mask);
+    printf("encoder->ch_layout.u.order: %d\n", encoder->ch_layout.order);
     ret = avcodec_open2(encoder, encoder->codec, nullptr);
+    printf("avcodec_open2 result: %d\n", ret);
     if (ret) {
       NAPI_THROW_ERROR(avErrorMsg("Failed to open audio encoder: ", ret));
     }
