@@ -224,7 +224,7 @@ napi_value getFrameFormat(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
 
   // Assume audio data using FFmpeg's own technique
-  if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->f->frame->ch_layout.nb_channels > 0)) {
+  if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->frame->ch_layout.nb_channels > 0)) {
     name = av_get_sample_fmt_name((AVSampleFormat) f->frame->format);
   }
   if (name == nullptr) { // Assume that it is video data
@@ -278,7 +278,7 @@ napi_value setFrameFormat(napi_env env, napi_callback_info info) {
     format = (int) av_get_sample_fmt((const char*) name);
     if ((format != AV_SAMPLE_FMT_NONE) && (f->frame->nb_samples == 0)) {
       f->frame->nb_samples = 1; // Cludge ... found a sample format ... force audio mode
-      f->f->frame->ch_layout.nb_channels = 1;
+      f->frame->ch_layout.nb_channels = 1;
     }
   }
 
@@ -614,54 +614,26 @@ done:
 }
 
 napi_value getFrameCodedPicNum(napi_env env, napi_callback_info info) {
-  napi_status status;
-  napi_value result;
-  frameData* f;
-
-  status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &f);
-  CHECK_STATUS;
-
-  status = napi_create_int32(env, f->frame->coded_picture_number, &result);
-  CHECK_STATUS;
-  return result;
+  // removed in FFmpeg 7
+  return 0;
 }
 
 napi_value setFrameCodedPicNum(napi_env env, napi_callback_info info) {
+  // removed in FFmpeg 7
   napi_status status;
   napi_value result;
-  napi_valuetype type;
-  frameData* f;
-
-  size_t argc = 1;
-  napi_value args[1];
-
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, (void**) &f);
-  CHECK_STATUS;
-  if (argc < 1) {
-    NAPI_THROW_ERROR("Set frame coded_picture_number must be provided with a value.");
-  }
-  status = napi_typeof(env, args[0], &type);
-  CHECK_STATUS;
-  if (type != napi_number) {
-    NAPI_THROW_ERROR("Frame coded_picture_number property must be set with a number.");
-  }
-  status = napi_get_value_int32(env, args[0], &f->frame->coded_picture_number);
-  CHECK_STATUS;
-
+  
   status = napi_get_undefined(env, &result);
   CHECK_STATUS;
   return result;
 }
 
 napi_value getFrameDispPicNum(napi_env env, napi_callback_info info) {
+  // removed in FFmpeg 7
   napi_status status;
   napi_value result;
-  frameData* f;
-
-  status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &f);
-  CHECK_STATUS;
-
-  status = napi_create_int32(env, f->frame->display_picture_number, &result);
+  
+  status = napi_get_undefined(env, &result);
   CHECK_STATUS;
   return result;
 }
@@ -669,24 +641,6 @@ napi_value getFrameDispPicNum(napi_env env, napi_callback_info info) {
 napi_value setFrameDispPicNum(napi_env env, napi_callback_info info) {
   napi_status status;
   napi_value result;
-  napi_valuetype type;
-  frameData* f;
-
-  size_t argc = 1;
-  napi_value args[1];
-
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, (void**) &f);
-  CHECK_STATUS;
-  if (argc < 1) {
-    NAPI_THROW_ERROR("Set frame display_picture_number must be provided with a value.");
-  }
-  status = napi_typeof(env, args[0], &type);
-  CHECK_STATUS;
-  if (type != napi_number) {
-    NAPI_THROW_ERROR("Frame display_picture_number property must be set with a number.");
-  }
-  status = napi_get_value_int32(env, args[0], &f->frame->display_picture_number);
-  CHECK_STATUS;
 
   status = napi_get_undefined(env, &result);
   CHECK_STATUS;
@@ -900,51 +854,12 @@ napi_value setFramePalHasChanged(napi_env env, napi_callback_info info) {
 }
 
 napi_value getFrameReorderOpq(napi_env env, napi_callback_info info) {
-  napi_status status;
-  napi_value result;
-  frameData* f;
-
-  status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &f);
-  CHECK_STATUS;
-
-  if (f->frame->reordered_opaque == AV_NOPTS_VALUE) {
-    status = napi_get_null(env, &result);
-    CHECK_STATUS;
-  } else {
-    status = napi_create_int64(env, f->frame->reordered_opaque, &result);
-    CHECK_STATUS;
-  }
-  return result;
+  return 0;
 }
 
 napi_value setFrameReorderOpq(napi_env env, napi_callback_info info) {
   napi_status status;
   napi_value result;
-  napi_valuetype type;
-  frameData* f;
-
-  size_t argc = 1;
-  napi_value args[1];
-
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, (void**) &f);
-  CHECK_STATUS;
-  if (argc < 1) {
-    NAPI_THROW_ERROR("Set frame reordered_opaque must be provided with a value.");
-  }
-  status = napi_typeof(env, args[0], &type);
-  CHECK_STATUS;
-  if ((type == napi_null) || (type == napi_undefined)) {
-    f->frame->reordered_opaque = AV_NOPTS_VALUE;
-    goto done;
-  }
-
-  if (type != napi_number) {
-    NAPI_THROW_ERROR("Frame reordered_opaque property must be set with a number.");
-  }
-  status = napi_get_value_int64(env, args[0], &f->frame->reordered_opaque);
-  CHECK_STATUS;
-
-done:
   status = napi_get_undefined(env, &result);
   CHECK_STATUS;
   return result;
@@ -1000,8 +915,13 @@ napi_value getFrameChanLayout(napi_env env, napi_callback_info info) {
 
   char channelLayoutName[64];
   printf("DEBUG: getFrameChanLayout channel layout: %" PRIu64 "\n", f->frame->ch_layout.u.mask);
+  AVChannelLayout layout = { };
+  layout.order = AV_CHANNEL_ORDER_UNSPEC; 
+  layout.nb_channels = f->frame->ch_layout.nb_channels;  
+  av_channel_layout_default(&layout, f->frame->ch_layout.nb_channels);
   beam_get_channel_layout_string(channelLayoutName, 64, 0, 
-    f->frame->ch_layout.u.mask ? f->frame->ch_layout.u.mask : av_get_default_channel_layout(f->f->frame->ch_layout.nb_channels));
+     f->frame->ch_layout.u.mask ? f->frame->ch_layout.u.mask : layout.u.mask);
+  av_channel_layout_uninit(&layout);
 
   status = napi_create_string_utf8(env, channelLayoutName, NAPI_AUTO_LENGTH, &result);
   CHECK_STATUS;
@@ -2319,12 +2239,12 @@ napi_value makeFrame(napi_env env, napi_callback_info info) {
       // int planes;
       int ret;
 
-      if (f->f->frame->ch_layout.nb_channels < 2) { // Bump up from default of 1 if necessary
-        f->f->frame->ch_layout.nb_channels = beam_get_channel_layout_nb_channels(f->frame->ch_layout.u.mask);
-        // printf("Calculated channel number %i\n", f->f->frame->ch_layout.nb_channels);
+      if (f->frame->ch_layout.nb_channels < 2) { // Bump up from default of 1 if necessary
+        f->frame->ch_layout.nb_channels = beam_get_channel_layout_nb_channels(f->frame->ch_layout.u.mask);
+        // printf("Calculated channel number %i\n", f->frame->ch_layout.nb_channels);
       }
 
-      channels = f->f->frame->ch_layout.nb_channels;
+      channels = f->frame->ch_layout.nb_channels;
       // planes = planar ? channels : 1;
 
       // TODO: is this needed? CHECK_CHANNELS_CONSISTENCY(f->frame);
@@ -2368,11 +2288,11 @@ napi_value alloc(napi_env env, napi_callback_info info) {
         }
       }
     }
-    else if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->f->frame->ch_layout.nb_channels > 0)) {
+    else if (f->frame->nb_samples > 0 && (f->frame->ch_layout.u.mask || f->frame->ch_layout.nb_channels > 0)) {
       int planar = av_sample_fmt_is_planar((AVSampleFormat) f->frame->format);
       if (planar) {
         for ( int x = 0 ; x < AV_NUM_DATA_POINTERS ; x++ ) {
-          if (x < f->f->frame->ch_layout.nb_channels) {
+          if (x < f->frame->ch_layout.nb_channels) {
             f->frame->buf[x] = av_buffer_alloc(f->frame->linesize[0]);
             f->frame->data[x] = f->frame->buf[x]->data;
           } else {
@@ -2477,8 +2397,9 @@ napi_value frameToJSON(napi_env env, napi_callback_info info) {
     // 10
   DECLARE_GETTER3("pts", f->frame->pts != AV_NOPTS_VALUE, getFramePTS, f);
   DECLARE_GETTER3("pkt_dts", f->frame->pkt_dts != AV_NOPTS_VALUE, getFramePktDTS, f);
-  DECLARE_GETTER3("coded_picture_number", f->frame->coded_picture_number > 0, getFrameCodedPicNum, f);
-  // display_picture_number removed in FFmpeg 5.0+
+  // removed in FFmpeg 7
+  DECLARE_GETTER3("coded_picture_number", false, getFrameCodedPicNum, f);
+  DECLARE_GETTER3("display_picture_number", false, getFrameDispPicNum, f);
   DECLARE_GETTER3("quality", f->frame->quality > 0, getFrameQuality, f);
   DECLARE_GETTER3("repeat_pict", f->frame->repeat_pict > 0, getFrameRepeatPict, f);
   DECLARE_GETTER3("interlaced_frame", f->frame->interlaced_frame != 0, getFrameInterlaced, f);

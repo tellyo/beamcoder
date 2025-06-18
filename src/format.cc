@@ -324,7 +324,8 @@ napi_value getIFormatRawCodecID(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, nullptr, nullptr, nullptr, (void**) &iformat);
   CHECK_STATUS;
 
-  status = napi_create_int32(env, iformat->raw_codec_id, &result);
+  // not available in FFmpeg 7
+  status = napi_create_int32(env, 0, &result);
   CHECK_STATUS;
 
   return result;
