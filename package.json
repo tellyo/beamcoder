@@ -35,6 +35,7 @@
   "homepage": "https://github.com/Streampunk/beamcoder#readme",
   "dependencies": {
     "bindings": "^1.5.0",
+    "node-addon-api": "^7.0.0",
     "segfault-handler": "^1.3.0"
   },
   "devDependencies": {

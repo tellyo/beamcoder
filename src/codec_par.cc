@@ -345,8 +345,7 @@ napi_value getCodecParFormat(napi_env env, napi_callback_info info) {
       fmtName = av_get_pix_fmt_name((AVPixelFormat) c->format);
       break;
     case AVMEDIA_TYPE_AUDIO:
-      //fmtName = av_get_sample_fmt_name((AVSampleFormat) c->format);
-      fmtName = "fltp";
+      fmtName = av_get_sample_fmt_name((AVSampleFormat) c->format);
       printf("Codec parameters format get: %s\n", fmtName);
       break;
     default: // Might not have media type set
@@ -1277,8 +1276,7 @@ napi_value getCodecParSampleRate(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &c);
   CHECK_STATUS;
 
-  //status = napi_create_int32(env, c->sample_rate, &result);
-  status = napi_create_int32(env, 48000, &result);
+  status = napi_create_int32(env, c->sample_rate, &result);
   CHECK_STATUS;
   return result;
 }

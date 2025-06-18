@@ -1016,10 +1016,7 @@ void filtererExecute(napi_env env, void* data) {
       }
       p = c->outParams[i].find("channel_layouts");
       if (p != c->outParams[i].end()) {
-        const int64_t out_channel_layouts[] = { (int64_t)beam_get_channel_layout(p->second.c_str()), -1 };
-        ret = av_opt_set_int_list(sinkCtx, "channel_layouts", out_channel_layouts, -1,
-                                  AV_OPT_SEARCH_CHILDREN);
-        if (ret < 0) { av_log(NULL, AV_LOG_ERROR, "Cannot set output channel layout\n"); }
+        // TODO: Try to construct filter channel layouts here, no public API for this
       }
     } else {
       auto p = c->outParams[i].find("pix_fmts");
@@ -1048,6 +1045,7 @@ void filtererExecute(napi_env env, void* data) {
     c->errorMsg = "Failed to parse filter graph.";
     goto end;
   }
+
 
   if ((ret = avfilter_graph_config(c->filterGraph, NULL)) < 0) {
     c->status = BEAMCODER_ERROR_ENOMEM;
@@ -1507,7 +1505,6 @@ napi_value filterer(napi_env env, napi_callback_info info) {
   return promise;
 }
 
-
 struct filterCarrier : carrier {
   filtContexts *srcCtxs = nullptr;
   filtContexts *sinkCtxs = nullptr;
@@ -1845,4 +1842,5 @@ napi_value filter(napi_env env, napi_callback_info info) {
 
   return promise;
 };
+
 

@@ -938,6 +938,28 @@ napi_status toContextPrivData(napi_env env, napi_value params, void* priv_data) 
   return napi_ok;
 }
 
+std::unordered_map<int, std::string> beam_option_type_fmap = {
+  { AV_OPT_TYPE_FLAGS, "flags" },
+  { AV_OPT_TYPE_INT, "int" },
+  { AV_OPT_TYPE_INT64, "int64" },
+  { AV_OPT_TYPE_DOUBLE, "double" },
+  { AV_OPT_TYPE_FLOAT, "float" },
+  { AV_OPT_TYPE_STRING, "string" },
+  { AV_OPT_TYPE_RATIONAL, "rational" },
+  { AV_OPT_TYPE_BINARY, "binary" },
+  { AV_OPT_TYPE_DICT, "dict" },
+  { AV_OPT_TYPE_UINT64, "uint64" },
+  { AV_OPT_TYPE_CONST, "const" },
+  { AV_OPT_TYPE_IMAGE_SIZE, "image_size" },
+  { AV_OPT_TYPE_PIXEL_FMT, "pixel_fmt" },
+  { AV_OPT_TYPE_SAMPLE_FMT, "sample_fmt" },
+  { AV_OPT_TYPE_VIDEO_RATE, "video_rate" },
+  { AV_OPT_TYPE_DURATION, "duration" },
+  { AV_OPT_TYPE_COLOR, "color" },
+  { AV_OPT_TYPE_BOOL, "bool" }
+};
+const beamEnum* beam_option_type = new beamEnum(beam_option_type_fmap);
+
 std::unordered_map<int, std::string> beam_field_order_fmap = {
   { AV_FIELD_PROGRESSIVE, "progressive" },
   { AV_FIELD_TT, "top coded first, top displayed first" },
