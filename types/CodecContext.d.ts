@@ -271,7 +271,7 @@ export interface CodecContext {
 	 * Frame counter - total number of frames returned from the decoder so far.
 	 * @note the counter is not incremented if encoding/decoding resulted in an error.
 	 */
-	readonly frame_number: number
+	readonly frame_num: number
 	/** number of bytes per packet if constant and known or 0. Used by some WAV based audio codecs. */
 	block_align: number
   /** Audio cutoff bandwidth (0 means "automatic") */

@@ -331,7 +331,7 @@ napi_value getIFormatRawCodecID(napi_env env, napi_callback_info info) {
   return result;
 }
 
-/*napi_value getOFormatPrivDataSize(napi_env env, napi_callback_info info) {
+napi_value getOFormatPrivDataSize(napi_env env, napi_callback_info info) {
   napi_status status;
   napi_value result;
   AVOutputFormat* oformat;
@@ -339,21 +339,19 @@ napi_value getIFormatRawCodecID(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, nullptr, nullptr, nullptr, (void**) &oformat);
   CHECK_STATUS;
 
-  status = napi_create_int32(env, oformat->priv_data_size, &result);
+// not available in FFmpeg 7
+  status = napi_create_int32(env, 0, &result);
   CHECK_STATUS;
 
   return result;
-}*/
+}
 
 napi_value getIFormatPrivDataSize(napi_env env, napi_callback_info info) {
   napi_status status;
   napi_value result;
-  AVInputFormat* iformat;
 
-  status = napi_get_cb_info(env, info, nullptr, nullptr, nullptr, (void**) &iformat);
-  CHECK_STATUS;
-
-  status = napi_create_int32(env, iformat->priv_data_size, &result);
+// not available in FFmpeg 7
+  status = napi_create_int32(env, 0, &result);
   CHECK_STATUS;
 
   return result;
@@ -566,8 +564,8 @@ napi_status fromAVOutputFormat(napi_env env,
       nullptr, napi_enumerable, (void*) oformat }, // 10
     { "priv_class", nullptr, nullptr, getOFormatPrivClass, nullptr,
       nullptr, napi_enumerable, (void*) oformat },
-    /*{ "priv_data_size", nullptr, nullptr, getOFormatPrivDataSize, nullptr,
-      nullptr, napi_enumerable, (void*) oformat },*/
+    { "priv_data_size", nullptr, nullptr, getOFormatPrivDataSize, nullptr,
+      nullptr, napi_enumerable, (void*) oformat },
     { "_oformat", nullptr, nullptr, nullptr, nullptr, extOFormat, napi_default, nullptr }
   };
   status = napi_define_properties(env, jsOFormat, 12, desc);
@@ -808,6 +806,10 @@ done:
   if ((fmtCtx->iformat == nullptr) || (found == false)) {
     NAPI_THROW_ERROR("Unable to find and/or set input format.");
   }
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
+  // In newer FFmpeg versions, private data allocation and initialization
+  // is handled automatically by FFmpeg's internal functions
+#else
   if (fmtCtx->iformat->priv_data_size > 0) {
     av_freep(&fmtCtx->priv_data);
     if (!(fmtCtx->priv_data = av_mallocz(fmtCtx->iformat->priv_data_size))) {
@@ -818,6 +820,7 @@ done:
       av_opt_set_defaults(fmtCtx->priv_data);
     }
   }
+#endif
 
 over:
   status = napi_get_undefined(env, &result);
