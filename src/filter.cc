@@ -1241,6 +1241,7 @@ napi_value filterer(napi_env env, napi_callback_info info) {
 
       napi_value channelLayoutVal;
       c->status = napi_get_named_property(env, inParamsVal, "channelLayout", &channelLayoutVal);
+      printf("got channel layout %s\n", channelLayout);
       REJECT_RETURN;
       size_t channelLayoutLen;
       c->status = napi_get_value_string_utf8(env, channelLayoutVal, nullptr, 0, &channelLayoutLen);

@@ -1032,6 +1032,19 @@ uint64_t beam_get_channel_layout(const char *name) {
 #if LIBAVUTIL_VERSION_MAJOR >= 57
   // For newer FFmpeg versions (5.0+), use the new channel layout API
   AVChannelLayout ch_layout = {};
+  printf("DEBUG: get channel layout by name %s\n", name);
+
+  // Handle numeric channel counts
+  int channels = 0;
+  if (sscanf(name, "%d channels", &channels) == 1) {
+    if (channels == 1) return AV_CH_LAYOUT_MONO;
+    if (channels == 2) return AV_CH_LAYOUT_STEREO;
+    av_channel_layout_default(&ch_layout, channels);
+    uint64_t layout = ch_layout.u.mask;
+    av_channel_layout_uninit(&ch_layout);
+    return layout;
+  }
+
   if (av_channel_layout_from_string(&ch_layout, name) < 0) {
     return 0;
   }
@@ -1207,3 +1220,31 @@ std::unordered_map<int, std::string> beam_frame_side_data_type_fmap = {
   { AV_FRAME_DATA_S12M_TIMECODE, "s12m_timecode" }
 };
 const beamEnum* beam_frame_side_data_type = new beamEnum(beam_frame_side_data_type_fmap);
+
+void beam_get_default_channel_layout(int channels, char *buf, size_t buf_size) {
+  // Handle common channel counts with friendly names
+  switch (channels) {
+    case 1:
+      snprintf(buf, buf_size, "mono");
+      return;
+    case 2:
+      snprintf(buf, buf_size, "stereo");
+      return;
+    case 3:
+      snprintf(buf, buf_size, "2.1");
+      return;
+    case 4:
+      snprintf(buf, buf_size, "4.0");
+      return;
+    case 5:
+      snprintf(buf, buf_size, "5.0");
+      return;
+    case 6:
+      snprintf(buf, buf_size, "5.1");
+      return;
+    case 7:
+      snprintf(buf, buf_size, "7.0");
+      return;
+  }
+  printf("DEBUG: beam_get_default_channel_layout: %s\n", buf);
+}

@@ -208,6 +208,7 @@ void beam_get_channel_layout_string(char *buf, int buf_size, int nb_channels, ui
 
 // FFmpeg compatibility wrapper for channel layout functions
 uint64_t beam_get_channel_layout(const char *name);
+void beam_get_default_channel_layout(int channels, char *buf, size_t buf_size);
 int beam_get_channel_layout_nb_channels(uint64_t channel_layout);
 
 #endif // BEAMCODER_UTIL_H
