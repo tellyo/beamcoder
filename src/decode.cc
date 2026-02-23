@@ -254,6 +254,10 @@ void decodeExecute(napi_env env, void* data) {
   AVFrame* frame = nullptr;
   AVFrame *sw_frame = nullptr;
   HR_TIME_POINT decodeStart = NOW;
+  c->packetsSubmitted = 0;
+  for ( auto it = c->packets.cbegin() ; it != c->packets.cend() ; it++ ) {
+    if (*it != nullptr) c->packetsSubmitted++;
+  }
 
   for ( auto it = c->packets.cbegin() ; it != c->packets.cend() ; it++ ) {
   bump:
@@ -315,12 +319,15 @@ void decodeExecute(napi_env env, void* data) {
   av_frame_free(&frame);
   av_frame_free(&sw_frame);
 
-  c->totalTime = microTime(decodeStart);
+  c->nativeDecodeTime = microTime(decodeStart);
+  c->totalTime = c->nativeDecodeTime;
+  c->framesDecoded = (uint32_t) c->frames.size();
 };
 
 void decodeComplete(napi_env env, napi_status asyncStatus, void* data) {
   decodeCarrier* c = (decodeCarrier*) data;
   napi_value result, frames, frame, prop;
+  HR_TIME_POINT marshalStart = NOW;
 
   for ( auto it = c->packetRefs.cbegin() ; it != c->packetRefs.cend() ; it++ ) {
     c->status = napi_delete_reference(env, *it);
@@ -358,6 +365,28 @@ void decodeComplete(napi_env env, napi_status asyncStatus, void* data) {
   c->status = napi_create_int64(env, c->totalTime, &prop);
   REJECT_STATUS;
   c->status = napi_set_named_property(env, result, "total_time", prop);
+  REJECT_STATUS;
+
+  c->marshalTime = microTime(marshalStart);
+
+  c->status = napi_create_int64(env, c->nativeDecodeTime, &prop);
+  REJECT_STATUS;
+  c->status = napi_set_named_property(env, result, "decode_time", prop);
+  REJECT_STATUS;
+
+  c->status = napi_create_int64(env, c->marshalTime, &prop);
+  REJECT_STATUS;
+  c->status = napi_set_named_property(env, result, "marshal_time", prop);
+  REJECT_STATUS;
+
+  c->status = napi_create_uint32(env, c->framesDecoded, &prop);
+  REJECT_STATUS;
+  c->status = napi_set_named_property(env, result, "frames_decoded", prop);
+  REJECT_STATUS;
+
+  c->status = napi_create_uint32(env, c->packetsSubmitted, &prop);
+  REJECT_STATUS;
+  c->status = napi_set_named_property(env, result, "packets_submitted", prop);
   REJECT_STATUS;
 
   napi_status status;

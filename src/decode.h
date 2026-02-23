@@ -64,6 +64,10 @@ struct decodeCarrier : carrier {
   std::vector<AVPacket*> packets;
   std::vector<AVFrame*> frames;
   std::vector<napi_ref> packetRefs;
+  long long nativeDecodeTime = 0;
+  long long marshalTime = 0;
+  uint32_t framesDecoded = 0;
+  uint32_t packetsSubmitted = 0;
   ~decodeCarrier() {
     // printf("Decode carrier destructor.\n");
   }
