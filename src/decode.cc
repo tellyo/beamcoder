@@ -20,9 +20,13 @@
 */
 
 #include "decode.h"
+#include <mutex>
+#include <unordered_set>
 
 char* req_hw_type = nullptr;
 AVPixelFormat req_hw_pix_fmt = AV_PIX_FMT_NONE;
+static std::mutex decodeInFlightMutex;
+static std::unordered_set<AVCodecContext*> decodeInFlightContexts;
 
 AVPixelFormat get_format(AVCodecContext *s, const AVPixelFormat *pix_fmts)
 {
@@ -251,73 +255,142 @@ void decoderFinalizer(napi_env env, void* data, void* hint) {
 void decodeExecute(napi_env env, void* data) {
   decodeCarrier* c = (decodeCarrier*) data;
   int ret = 0;
-  AVFrame* frame = nullptr;
-  AVFrame *sw_frame = nullptr;
   HR_TIME_POINT decodeStart = NOW;
+  AVPixelFormat frame_hw_pix_fmt = AV_PIX_FMT_NONE;
+
+  struct DecodeInFlightGuard {
+    AVCodecContext* decoder;
+    DecodeInFlightGuard(AVCodecContext* d) : decoder(d) {
+      std::lock_guard<std::mutex> lock(decodeInFlightMutex);
+      decodeInFlightContexts.insert(decoder);
+    }
+    ~DecodeInFlightGuard() {
+      std::lock_guard<std::mutex> lock(decodeInFlightMutex);
+      decodeInFlightContexts.erase(decoder);
+    }
+  };
+
+  {
+    std::lock_guard<std::mutex> lock(decodeInFlightMutex);
+    if (decodeInFlightContexts.find(c->decoder) != decodeInFlightContexts.end()) {
+      c->status = BEAMCODER_ERROR_DECODE;
+      c->errorMsg = "Concurrent decode/flush calls on the same decoder are not supported.";
+      return;
+    }
+  }
+  DecodeInFlightGuard inFlightGuard(c->decoder);
+
   c->packetsSubmitted = 0;
+  bool decoderOpenRetried = false;
   for ( auto it = c->packets.cbegin() ; it != c->packets.cend() ; it++ ) {
     if (*it != nullptr) c->packetsSubmitted++;
   }
 
-  for ( auto it = c->packets.cbegin() ; it != c->packets.cend() ; it++ ) {
-  bump:
-    ret = avcodec_send_packet(c->decoder, *it);
-    switch (ret) {
-      case AVERROR(EAGAIN):
-        // printf("Input is not accepted in the current state - user must read output with avcodec_receive_frame().\n");
-        frame = av_frame_alloc();
-        avcodec_receive_frame(c->decoder, frame);
-        c->frames.push_back(frame);
-        goto bump;
-      case AVERROR_EOF:
-        c->status = BEAMCODER_ERROR_EOF;
-        c->errorMsg = "The decoder has been flushed, and no new packets can be sent to it.";
-        return;
-      case AVERROR(EINVAL):
-        if ((ret = avcodec_open2(c->decoder, c->decoder->codec, nullptr))) {
-          c->status = BEAMCODER_ERROR_ALLOC_DECODER;
-          c->errorMsg = avErrorMsg("Problem opening decoder: ", ret);
-          return;
-        }
-        goto bump;
-      case AVERROR(ENOMEM):
-        c->status = BEAMCODER_ERROR_ENOMEM;
-        c->errorMsg = "Failed to add packet to internal queue.";
-        return;
-      case 0:
-        // printf("Successfully sent packet to codec.\n");
-        break;
-      default:
-        c->status = BEAMCODER_ERROR_DECODE;
-        c->errorMsg = avErrorMsg("Error sending packet: ", ret);
-        return;
-    }
-  } // loop through input packets
-
-  AVPixelFormat frame_hw_pix_fmt = AV_PIX_FMT_NONE;
   if (c->decoder->hw_frames_ctx)
     frame_hw_pix_fmt = ((AVHWFramesContext*)c->decoder->hw_frames_ctx->data)->format;
 
-  frame = av_frame_alloc();
-  sw_frame = av_frame_alloc();
-  do {
-    ret = avcodec_receive_frame(c->decoder, frame);
-    if (ret == 0) {
-      if (frame->format == frame_hw_pix_fmt) {
-        if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
-          printf("Error transferring hw data to system memory\n");
-        }
-        c->frames.push_back(sw_frame);
-        av_frame_free(&frame);
-      } else
-        c->frames.push_back(frame);
+  auto drainFrames = [&]() -> int {
+    while (true) {
+      AVFrame* frame = av_frame_alloc();
+      if (frame == nullptr) return AVERROR(ENOMEM);
 
-      frame = av_frame_alloc();
-      sw_frame = av_frame_alloc();
+      int receiveRet = avcodec_receive_frame(c->decoder, frame);
+      if (receiveRet == 0) {
+        if (frame->format == frame_hw_pix_fmt) {
+          AVFrame* sw_frame = av_frame_alloc();
+          if (sw_frame == nullptr) {
+            av_frame_free(&frame);
+            return AVERROR(ENOMEM);
+          }
+          int transferRet = av_hwframe_transfer_data(sw_frame, frame, 0);
+          if (transferRet < 0) {
+            av_frame_free(&sw_frame);
+            av_frame_free(&frame);
+            return transferRet;
+          }
+          c->frames.push_back(sw_frame);
+          av_frame_free(&frame);
+        } else {
+          c->frames.push_back(frame);
+        }
+        continue;
+      }
+
+      av_frame_free(&frame);
+      if (receiveRet == AVERROR(EAGAIN) || receiveRet == AVERROR_EOF) {
+        return receiveRet;
+      }
+      return receiveRet;
     }
-  } while (ret == 0);
-  av_frame_free(&frame);
-  av_frame_free(&sw_frame);
+  };
+
+  for ( auto it = c->packets.cbegin() ; it != c->packets.cend() ; it++ ) {
+    while (true) {
+      ret = avcodec_send_packet(c->decoder, *it);
+      if (ret == 0) {
+        break;
+      }
+      if (ret == AVERROR(EAGAIN)) {
+        int drainRet = drainFrames();
+        if (drainRet == AVERROR(EAGAIN)) {
+          continue;
+        }
+        if (drainRet < 0 && drainRet != AVERROR_EOF) {
+          c->status = BEAMCODER_ERROR_DECODE;
+          c->errorMsg = avErrorMsg("Error receiving frame after EAGAIN: ", drainRet);
+          return;
+        }
+        continue;
+      }
+      if (ret == AVERROR_EOF) {
+        c->status = BEAMCODER_ERROR_EOF;
+        c->errorMsg = "The decoder has been flushed, and no new packets can be sent to it.";
+        return;
+      }
+      if (ret == AVERROR(EINVAL)) {
+        if (!decoderOpenRetried) {
+          int openRet = avcodec_open2(c->decoder, c->decoder->codec, nullptr);
+          if (openRet < 0) {
+            c->status = BEAMCODER_ERROR_ALLOC_DECODER;
+            c->errorMsg = avErrorMsg("Problem opening decoder: ", openRet);
+            return;
+          }
+          decoderOpenRetried = true;
+          continue;
+        }
+        c->status = BEAMCODER_ERROR_DECODE;
+        c->errorMsg = "Decoder is not in a valid state for avcodec_send_packet.";
+        return;
+      }
+      if (ret == AVERROR(ENOMEM)) {
+        c->status = BEAMCODER_ERROR_ENOMEM;
+        c->errorMsg = "Failed to add packet to internal queue.";
+        return;
+      }
+      c->status = BEAMCODER_ERROR_DECODE;
+      c->errorMsg = avErrorMsg("Error sending packet: ", ret);
+      return;
+    }
+
+    ret = drainFrames();
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
+      c->status = BEAMCODER_ERROR_DECODE;
+      c->errorMsg = avErrorMsg("Error receiving frame: ", ret);
+      return;
+    }
+  } // loop through input packets
+
+  while (true) {
+    ret = drainFrames();
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+      break;
+    }
+    if (ret < 0) {
+      c->status = BEAMCODER_ERROR_DECODE;
+      c->errorMsg = avErrorMsg("Error draining decoder: ", ret);
+      return;
+    }
+  }
 
   c->nativeDecodeTime = microTime(decodeStart);
   c->totalTime = c->nativeDecodeTime;
@@ -414,6 +487,8 @@ napi_value decode(napi_env env, napi_callback_info info) {
   c->status = napi_get_named_property(env, decoderJS, "_CodecContext", &decoderExt);
   REJECT_RETURN;
   c->status = napi_get_value_external(env, decoderExt, (void**) &c->decoder);
+  REJECT_RETURN;
+  c->status = napi_create_reference(env, decoderJS, 1, &c->passthru);
   REJECT_RETURN;
 
   if (argc == 0) {
@@ -540,6 +615,8 @@ napi_value flushDec(napi_env env, napi_callback_info info) {
   c->status = napi_get_named_property(env, decoderJS, "_CodecContext", &decoderExt);
   REJECT_RETURN;
   c->status = napi_get_value_external(env, decoderExt, (void**) &c->decoder);
+  REJECT_RETURN;
+  c->status = napi_create_reference(env, decoderJS, 1, &c->passthru);
   REJECT_RETURN;
 
   if (argc != 0) {
