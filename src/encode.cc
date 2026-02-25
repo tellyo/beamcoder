@@ -20,6 +20,11 @@
 */
 
 #include "encode.h"
+#include <mutex>
+#include <unordered_set>
+
+static std::mutex encodeInFlightMutex;
+static std::unordered_set<AVCodecContext*> encodeInFlightContexts;
 
 napi_value encoder(napi_env env, napi_callback_info info) {
   napi_status status;
@@ -173,6 +178,28 @@ void encodeExecute(napi_env env, void* data) {
   AVPacket* packet = nullptr;
   HR_TIME_POINT encodeStart = NOW;
 
+  struct EncodeInFlightGuard {
+    AVCodecContext* encoder;
+    EncodeInFlightGuard(AVCodecContext* e) : encoder(e) {
+      std::lock_guard<std::mutex> lock(encodeInFlightMutex);
+      encodeInFlightContexts.insert(encoder);
+    }
+    ~EncodeInFlightGuard() {
+      std::lock_guard<std::mutex> lock(encodeInFlightMutex);
+      encodeInFlightContexts.erase(encoder);
+    }
+  };
+
+  {
+    std::lock_guard<std::mutex> lock(encodeInFlightMutex);
+    if (encodeInFlightContexts.find(c->encoder) != encodeInFlightContexts.end()) {
+      c->status = BEAMCODER_ERROR_ENCODE;
+      c->errorMsg = "Concurrent encode/flush calls on the same encoder are not supported.";
+      return;
+    }
+  }
+  EncodeInFlightGuard inFlightGuard(c->encoder);
+
   for ( auto it = c->frames.cbegin() ; it != c->frames.cend() ; it++ ) {
   bump:
    ret = avcodec_send_frame(c->encoder, *it);
@@ -296,6 +323,8 @@ napi_value encode(napi_env env, napi_callback_info info) {
   c->status = napi_get_named_property(env, encoderJS, "_CodecContext", &encoderExt);
   REJECT_RETURN;
   c->status = napi_get_value_external(env, encoderExt, (void**) &c->encoder);
+  REJECT_RETURN;
+  c->status = napi_create_reference(env, encoderJS, 1, &c->passthru);
   REJECT_RETURN;
 
   if (argc == 0) {
@@ -482,6 +511,8 @@ napi_value flushEnc(napi_env env, napi_callback_info info) {
   c->status = napi_get_named_property(env, encoderJS, "_CodecContext", &encoderExt);
   REJECT_RETURN;
   c->status = napi_get_value_external(env, encoderExt, (void**) &c->encoder);
+  REJECT_RETURN;
+  c->status = napi_create_reference(env, encoderJS, 1, &c->passthru);
   REJECT_RETURN;
 
   if (argc != 0) {

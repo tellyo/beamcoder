@@ -3614,7 +3614,7 @@ napi_value setCodecCtxChanLayout(napi_env env, napi_callback_info info) {
   AVCodecContext* codec;
   char* name;
   size_t strLen;
-  uint64_t chanLay;
+  int ret;
 
   size_t argc = 1;
   napi_value args[1];
@@ -3627,7 +3627,6 @@ napi_value setCodecCtxChanLayout(napi_env env, napi_callback_info info) {
   CHECK_STATUS;
   if ((type == napi_null) || (type == napi_undefined)) {
     av_channel_layout_uninit(&codec->ch_layout);
-    av_channel_layout_default(&codec->ch_layout, 0);
     goto done;
   }
   if (type != napi_string) {
@@ -3639,15 +3638,12 @@ napi_value setCodecCtxChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], name, strLen + 1, &strLen);
   CHECK_STATUS;
 
-  chanLay = beam_get_channel_layout(name);
-  av_channel_layout_from_string(&codec->ch_layout, name);
-  printf("ch_layout: %" PRIu64 "\n", codec->ch_layout.u.mask);
-  if (chanLay != 0) {
-    codec->ch_layout.nb_channels = beam_get_channel_layout_nb_channels(chanLay);
-  } else {
+  av_channel_layout_uninit(&codec->ch_layout);
+  ret = av_channel_layout_from_string(&codec->ch_layout, name);
+  free(name);
+  if (ret < 0) {
     NAPI_THROW_ERROR("Channel layout name is not recognized. Set 'null' for '0 channels'.");
   }
-  free(name);
 
 done:
   status = napi_get_undefined(env, &result);

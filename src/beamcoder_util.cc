@@ -1017,11 +1017,9 @@ void beam_get_channel_layout_string(char *buf, int buf_size, int nb_channels, ui
 #if LIBAVUTIL_VERSION_MAJOR >= 57
   // For newer FFmpeg versions (5.0+), use the new channel layout API
   AVChannelLayout ch_layout = {};
-  printf("DEBUG: beam_get_channel_layout_string channel layout: %" PRIu64 "\n", channel_layout);
   av_channel_layout_from_mask(&ch_layout, channel_layout);
   av_channel_layout_describe(&ch_layout, buf, buf_size);
   av_channel_layout_uninit(&ch_layout);
-  printf("DEBUG: beam_get_channel_layout_string: %s\n", buf);
 #else
   // For older FFmpeg versions, use the legacy function
   av_get_channel_layout_string(buf, buf_size, nb_channels, channel_layout);
@@ -1032,7 +1030,6 @@ uint64_t beam_get_channel_layout(const char *name) {
 #if LIBAVUTIL_VERSION_MAJOR >= 57
   // For newer FFmpeg versions (5.0+), use the new channel layout API
   AVChannelLayout ch_layout = {};
-  printf("DEBUG: get channel layout by name %s\n", name);
 
   // Handle numeric channel counts
   int channels = 0;
@@ -1049,7 +1046,6 @@ uint64_t beam_get_channel_layout(const char *name) {
     return 0;
   }
   uint64_t layout = ch_layout.u.mask;
-  printf("DEBUG: beam_get_channel_layout: %" PRIu64 "\n", layout);
   av_channel_layout_uninit(&ch_layout);
   return layout;
 #else
@@ -1064,7 +1060,6 @@ int beam_get_channel_layout_nb_channels(uint64_t channel_layout) {
   AVChannelLayout ch_layout = {};
   av_channel_layout_from_mask(&ch_layout, channel_layout);
   int nb_channels = ch_layout.nb_channels;
-  printf("DEBUG: beam_get_channel_layout_nb_channels: %d\n", nb_channels);
   av_channel_layout_uninit(&ch_layout);
   return nb_channels;
 #else
@@ -1246,5 +1241,4 @@ void beam_get_default_channel_layout(int channels, char *buf, size_t buf_size) {
       snprintf(buf, buf_size, "7.0");
       return;
   }
-  printf("DEBUG: beam_get_default_channel_layout: %s\n", buf);
 }

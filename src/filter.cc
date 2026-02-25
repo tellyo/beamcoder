@@ -1149,9 +1149,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
   size_t filterTypeLen;
   c->status = napi_get_value_string_utf8(env, filterTypeVal, nullptr, 0, &filterTypeLen);
   REJECT_RETURN;
-  c->filterType.resize(filterTypeLen);
-  c->status = napi_get_value_string_utf8(env, filterTypeVal, (char *)c->filterType.data(), filterTypeLen+1, nullptr);
+  c->filterType.resize(filterTypeLen + 1);
+  c->status = napi_get_value_string_utf8(env, filterTypeVal, (char *)c->filterType.data(), filterTypeLen + 1, nullptr);
   REJECT_RETURN;
+  c->filterType.resize(filterTypeLen);
   if ((0 != c->filterType.compare("audio")) && (0 != c->filterType.compare("video"))) {
     REJECT_ERROR_RETURN("Filterer expects filterType of audio or video.",
       BEAMCODER_INVALID_ARGS);
@@ -1214,9 +1215,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t nameLen;
       c->status = napi_get_value_string_utf8(env, nameVal, nullptr, 0, &nameLen);
       REJECT_RETURN;
-      name.resize(nameLen);
-      c->status = napi_get_value_string_utf8(env, nameVal, (char *)name.data(), nameLen+1, nullptr);
+      name.resize(nameLen + 1);
+      c->status = napi_get_value_string_utf8(env, nameVal, (char *)name.data(), nameLen + 1, nullptr);
       REJECT_RETURN;
+      name.resize(nameLen);
       c->inNames.push_back(name);
     } else
       c->inNames.push_back("in");
@@ -1235,20 +1237,21 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t sampleFmtLen;
       c->status = napi_get_value_string_utf8(env, sampleFmtVal, nullptr, 0, &sampleFmtLen);
       REJECT_RETURN;
-      sampleFormat.resize(sampleFmtLen);
-      c->status = napi_get_value_string_utf8(env, sampleFmtVal, (char *)sampleFormat.data(), sampleFmtLen+1, nullptr);
+      sampleFormat.resize(sampleFmtLen + 1);
+      c->status = napi_get_value_string_utf8(env, sampleFmtVal, (char *)sampleFormat.data(), sampleFmtLen + 1, nullptr);
       REJECT_RETURN;
+      sampleFormat.resize(sampleFmtLen);
 
       napi_value channelLayoutVal;
       c->status = napi_get_named_property(env, inParamsVal, "channelLayout", &channelLayoutVal);
-      printf("got channel layout %s\n", channelLayout);
       REJECT_RETURN;
       size_t channelLayoutLen;
       c->status = napi_get_value_string_utf8(env, channelLayoutVal, nullptr, 0, &channelLayoutLen);
       REJECT_RETURN;
-      channelLayout.resize(channelLayoutLen);
-      c->status = napi_get_value_string_utf8(env, channelLayoutVal, (char *)channelLayout.data(), channelLayoutLen+1, nullptr);
+      channelLayout.resize(channelLayoutLen + 1);
+      c->status = napi_get_value_string_utf8(env, channelLayoutVal, (char *)channelLayout.data(), channelLayoutLen + 1, nullptr);
       REJECT_RETURN;
+      channelLayout.resize(channelLayoutLen);
     } else {
       napi_value widthVal;
       c->status = napi_get_named_property(env, inParamsVal, "width", &widthVal);
@@ -1267,9 +1270,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t pixFmtLen;
       c->status = napi_get_value_string_utf8(env, pixFmtVal, nullptr, 0, &pixFmtLen);
       REJECT_RETURN;
-      pixFmt.resize(pixFmtLen);
-      c->status = napi_get_value_string_utf8(env, pixFmtVal, (char *)pixFmt.data(), pixFmtLen+1, nullptr);
+      pixFmt.resize(pixFmtLen + 1);
+      c->status = napi_get_value_string_utf8(env, pixFmtVal, (char *)pixFmt.data(), pixFmtLen + 1, nullptr);
       REJECT_RETURN;
+      pixFmt.resize(pixFmtLen);
 
       napi_value pixelAspectVal;
       c->status = napi_get_named_property(env, inParamsVal, "pixelAspect", &pixelAspectVal);
@@ -1308,9 +1312,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
         size_t swPixFmtLen;
         c->status = napi_get_value_string_utf8(env, swPixFmtVal, nullptr, 0, &swPixFmtLen);
         REJECT_RETURN;
-        swPixFmt.resize(swPixFmtLen);
-        c->status = napi_get_value_string_utf8(env, swPixFmtVal, (char *)swPixFmt.data(), swPixFmtLen+1, nullptr);
+        swPixFmt.resize(swPixFmtLen + 1);
+        c->status = napi_get_value_string_utf8(env, swPixFmtVal, (char *)swPixFmt.data(), swPixFmtLen + 1, nullptr);
         REJECT_RETURN;
+        swPixFmt.resize(swPixFmtLen);
       }
 
       filtererInData inData = {};
@@ -1429,9 +1434,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t nameLen;
       c->status = napi_get_value_string_utf8(env, nameVal, nullptr, 0, &nameLen);
       REJECT_RETURN;
-      name.resize(nameLen);
-      c->status = napi_get_value_string_utf8(env, nameVal, (char *)name.data(), nameLen+1, nullptr);
+      name.resize(nameLen + 1);
+      c->status = napi_get_value_string_utf8(env, nameVal, (char *)name.data(), nameLen + 1, nullptr);
       REJECT_RETURN;
+      name.resize(nameLen);
       c->outNames.push_back(name);
     } else
       c->outNames.push_back("out");
@@ -1449,9 +1455,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t sampleFmtLen;
       c->status = napi_get_value_string_utf8(env, sampleFmtVal, nullptr, 0, &sampleFmtLen);
       REJECT_RETURN;
-      sampleFormat.resize(sampleFmtLen);
-      c->status = napi_get_value_string_utf8(env, sampleFmtVal, (char *)sampleFormat.data(), sampleFmtLen+1, nullptr);
+      sampleFormat.resize(sampleFmtLen + 1);
+      c->status = napi_get_value_string_utf8(env, sampleFmtVal, (char *)sampleFormat.data(), sampleFmtLen + 1, nullptr);
       REJECT_RETURN;
+      sampleFormat.resize(sampleFmtLen);
 
       napi_value channelLayoutVal;
       c->status = napi_get_named_property(env, outParamsVal, "channelLayout", &channelLayoutVal);
@@ -1459,9 +1466,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t channelLayoutLen;
       c->status = napi_get_value_string_utf8(env, channelLayoutVal, nullptr, 0, &channelLayoutLen);
       REJECT_RETURN;
-      channelLayout.resize(channelLayoutLen);
-      c->status = napi_get_value_string_utf8(env, channelLayoutVal, (char *)channelLayout.data(), channelLayoutLen+1, nullptr);
+      channelLayout.resize(channelLayoutLen + 1);
+      c->status = napi_get_value_string_utf8(env, channelLayoutVal, (char *)channelLayout.data(), channelLayoutLen + 1, nullptr);
       REJECT_RETURN;
+      channelLayout.resize(channelLayoutLen);
 
       std::map<std::string, std::string> paramMap;
       paramMap.emplace("sample_rates", std::to_string(sampleRate));
@@ -1475,9 +1483,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
       size_t pixFmtLen;
       c->status = napi_get_value_string_utf8(env, pixFmtVal, nullptr, 0, &pixFmtLen);
       REJECT_RETURN;
-      pixFmt.resize(pixFmtLen);
-      c->status = napi_get_value_string_utf8(env, pixFmtVal, (char *)pixFmt.data(), pixFmtLen+1, nullptr);
+      pixFmt.resize(pixFmtLen + 1);
+      c->status = napi_get_value_string_utf8(env, pixFmtVal, (char *)pixFmt.data(), pixFmtLen + 1, nullptr);
       REJECT_RETURN;
+      pixFmt.resize(pixFmtLen);
 
       std::map<std::string, std::string> paramMap;
       paramMap.emplace("pix_fmts", pixFmt);
@@ -1491,9 +1500,10 @@ napi_value filterer(napi_env env, napi_callback_info info) {
   size_t specLen;
   c->status = napi_get_value_string_utf8(env, filterSpecJS, nullptr, 0, &specLen);
   REJECT_RETURN;
-  c->filterSpec.resize(specLen);
-  c->status = napi_get_value_string_utf8(env, filterSpecJS, (char *)c->filterSpec.data(), specLen+1, nullptr);
+  c->filterSpec.resize(specLen + 1);
+  c->status = napi_get_value_string_utf8(env, filterSpecJS, (char *)c->filterSpec.data(), specLen + 1, nullptr);
   REJECT_RETURN;
+  c->filterSpec.resize(specLen);
 
   c->status = napi_create_string_utf8(env, "Filterer", NAPI_AUTO_LENGTH, &resourceName);
   REJECT_RETURN;
@@ -1777,9 +1787,10 @@ napi_value filter(napi_env env, napi_callback_info info) {
         size_t nameLen;
         c->status = napi_get_value_string_utf8(env, nameVal, nullptr, 0, &nameLen);
         REJECT_RETURN;
-        name.resize(nameLen);
-        c->status = napi_get_value_string_utf8(env, nameVal, (char *)name.data(), nameLen+1, nullptr);
+        name.resize(nameLen + 1);
+        c->status = napi_get_value_string_utf8(env, nameVal, (char *)name.data(), nameLen + 1, nullptr);
         REJECT_RETURN;
+        name.resize(nameLen);
       } else if (0 == i) {
         name = "in";
       } else {

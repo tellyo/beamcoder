@@ -913,15 +913,12 @@ napi_value getFrameChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_cb_info(env, info, 0, nullptr, nullptr, (void**) &f);
   CHECK_STATUS;
 
-  char channelLayoutName[64];
-  printf("DEBUG: getFrameChanLayout channel layout: %" PRIu64 "\n", f->frame->ch_layout.u.mask);
-  AVChannelLayout layout = { };
-  layout.order = AV_CHANNEL_ORDER_UNSPEC; 
-  layout.nb_channels = f->frame->ch_layout.nb_channels;  
-  av_channel_layout_default(&layout, f->frame->ch_layout.nb_channels);
-  beam_get_channel_layout_string(channelLayoutName, 64, 0, 
-     f->frame->ch_layout.u.mask ? f->frame->ch_layout.u.mask : layout.u.mask);
-  av_channel_layout_uninit(&layout);
+  char channelLayoutName[64] = { 0 };
+  if (f->frame->ch_layout.nb_channels > 0) {
+    av_channel_layout_describe(&f->frame->ch_layout, channelLayoutName, sizeof(channelLayoutName));
+  } else {
+    snprintf(channelLayoutName, sizeof(channelLayoutName), "unknown");
+  }
 
   status = napi_create_string_utf8(env, channelLayoutName, NAPI_AUTO_LENGTH, &result);
   CHECK_STATUS;
@@ -935,6 +932,7 @@ napi_value setFrameChanLayout(napi_env env, napi_callback_info info) {
   frameData* f;
   char* name;
   size_t len;
+  int ret;
 
   size_t argc = 1;
   napi_value args[1];
@@ -947,7 +945,7 @@ napi_value setFrameChanLayout(napi_env env, napi_callback_info info) {
   status = napi_typeof(env, args[0], &type);
   CHECK_STATUS;
   if ((type == napi_null) || (type == napi_undefined)) {
-    f->frame->ch_layout.u.mask = 0;
+    av_channel_layout_uninit(&f->frame->ch_layout);
     goto done;
   }
   if (type != napi_string) {
@@ -959,8 +957,12 @@ napi_value setFrameChanLayout(napi_env env, napi_callback_info info) {
   status = napi_get_value_string_utf8(env, args[0], name, len + 1, &len);
   CHECK_STATUS;
 
-  f->frame->ch_layout.u.mask = beam_get_channel_layout(name);
+  av_channel_layout_uninit(&f->frame->ch_layout);
+  ret = av_channel_layout_from_string(&f->frame->ch_layout, name);
   free(name);
+  if (ret < 0) {
+    NAPI_THROW_ERROR("Frame channel_layout property must be set with a valid channel layout string.");
+  }
 
 done:
   status = napi_get_undefined(env, &result);
